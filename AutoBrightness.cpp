@@ -3,8 +3,6 @@
 #include <QString>
 #include <QProcess>
 
-#pragma comment(lib, "Dxva2.lib")
-
 
 void AutoBrightness::setBrightness(int brightness) {
     std::string command = "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, ";
@@ -29,12 +27,12 @@ double AutoBrightness::getAverageBrightness(const cv::Mat& frame) {
 }
 
 
-AutoBrightness::AutoBrightness(QObject* parent): QObject(parent) {
+AutoBrightness::AutoBrightness(QObject* parent): QObject(parent)
+    ,m_cap(0)
+{
     // 禁用自动曝光和自动增益
 
 
-
-    return;
 }
 
 AutoBrightness::~AutoBrightness(){
@@ -46,38 +44,36 @@ AutoBrightness* AutoBrightness::getInstance(){
     return &instance;
 }
 
-
-void AutoBrightness::start(){
-    m_cap.open(0);
+void AutoBrightness::openCap(){
     m_cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0.25); // 0.25表示手动模式
-    m_cap.set(cv::CAP_PROP_EXPOSURE, 0); // 设置曝光值，具体值需要根据摄像头型号调整
+    m_cap.set(cv::CAP_PROP_EXPOSURE, -7); // 设置曝光值，具体值需要根据摄像头型号调整
     m_cap.set(cv::CAP_PROP_GAIN, 0); // 设置增益值
-    m_cap.set(cv::CAP_PROP_FRAME_WIDTH, 10);
-    m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, 10);
+    m_cap.set(cv::CAP_PROP_FRAME_WIDTH, 160);
+    m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, 120);
     m_cap.set(cv::CAP_PROP_FPS, 1);
-    while (true) {
+    m_cap.open(0,cv::CAP_DSHOW);
+    qDebug()<<"CAP_PROP_FPS:"<<m_cap.get(cv::CAP_PROP_FPS);
+    qDebug()<<"CAP_PROP_FRAME_WIDTH:"<<m_cap.get(cv::CAP_PROP_FRAME_WIDTH);
+    qDebug()<<"CAP_PROP_FRAME_HEIGHT:"<<m_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
 
-        if (!m_cap.isOpened()) {
-            std::cerr << "Error: Could not open camera." << std::endl;
-            return;
-        }
-        cv::Mat frame;
-        m_cap >> frame; // 获取摄像头帧
 
-        if (frame.empty()) {
-            std::cerr << "Error: No captured frame." << std::endl;
-            break;
-        }
+    do{QThread::msleep(2000);}
+    while (!m_cap.isOpened());
+}
 
-        // 计算平均亮度并设置屏幕亮度
-        double brightness = getAverageBrightness(frame);
-        int screenBrightness = static_cast<int>(brightness * 200 / 255); // 将亮度转换为0-100范围
-        setBrightness(screenBrightness);
-
-        QThread::msleep(30000);
-    }
+void AutoBrightness::releaseCap(){
     m_cap.release();
+}
 
+void AutoBrightness::update(){
+
+    cv::Mat frame;
+    m_cap >> frame; // 获取摄像头帧
+
+    // 计算平均亮度并设置屏幕亮度
+    double brightness = getAverageBrightness(frame);
+    int screenBrightness = static_cast<int>(brightness * 200 / 255); // 将亮度转换为0-100范围
+    setBrightness(screenBrightness);
 }
 
 #include "moc_AutoBrightness.cpp"

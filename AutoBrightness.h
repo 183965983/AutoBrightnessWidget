@@ -15,12 +15,15 @@ class AutoBrightness:public QObject{
 
 public:
     static AutoBrightness* getInstance();
-    void start();
+    void update();
+    void openCap();
+    void releaseCap();
 
 private:
     AutoBrightness(QObject *parent = nullptr);
     ~AutoBrightness();
     double getAverageBrightness(const cv::Mat& frame);
+
 
 
 private:

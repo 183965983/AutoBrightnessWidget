@@ -27,5 +27,6 @@ private:
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;
     AutoBrightness* m_autoBrightness;
+    bool m_running;
 };
 #endif // MAINWINDOW_H
