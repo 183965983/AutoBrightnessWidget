@@ -6,7 +6,8 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , m_autoBrightThread(QThread::create(AutoBrightness))
+    , m_autoBrightness(AutoBrightness::getInstance())
+    , m_autoBrightThread(QThread::create([](){AutoBrightness::getInstance()->start();}))
 {
     m_autoBrightThread->setPriority(QThread::HighestPriority);
     ui->setupUi(this);
@@ -26,6 +27,6 @@ void MainWindow::on_pushButton_clicked()
 
 void MainWindow::on_pushButton_2_clicked()
 {
-    m_autoBrightThread->wait();
+    //5m_autoBrightThread.
 }
 

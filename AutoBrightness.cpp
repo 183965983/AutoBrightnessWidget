@@ -1,14 +1,27 @@
-﻿#include <opencv2/opencv.hpp>
-#include <windows.h>
-#include <highlevelmonitorconfigurationapi.h>
-#include <iostream>
+﻿#include <iostream>
 #include "AutoBrightness.h"
+#include <QString>
+#include <QProcess>
 
 #pragma comment(lib, "Dxva2.lib")
 
 
+void AutoBrightness::setBrightness(int brightness) {
+    std::string command = "(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, ";
+    command += std::to_string(brightness);
+    command += ")";
+
+    QStringList arguments;
+    arguments << "-NoProfile" << "-ExecutionPolicy" << "Bypass" << "-WindowStyle" << "Hidden" << "-Command" << command.c_str();
+
+    QProcess process;
+    qDebug()<<brightness;
+    process.start("powershell.exe", arguments);
+    process.waitForFinished();
+}
+
 // 获取图像平均亮度
-double getAverageBrightness(const cv::Mat& frame) {
+double AutoBrightness::getAverageBrightness(const cv::Mat& frame) {
     cv::Mat grayFrame;
     cvtColor(frame, grayFrame, cv::COLOR_BGR2GRAY);
     cv::Scalar meanScalar = mean(grayFrame);
@@ -16,46 +29,41 @@ double getAverageBrightness(const cv::Mat& frame) {
 }
 
 
-void SetBrightness(int brightness) {
-    // 构建 PowerShell 命令字符串
-    std::string command = "powershell.exe -Command \"(Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, ";
-    command += std::to_string(brightness);
-    command += ")\"";
-
-    // SHELLEXECUTEINFO sei;
-    // ZeroMemory(&sei, sizeof(sei));
-    // sei.cbSize = sizeof(sei);
-    // sei.lpVerb = L"open";
-    // sei.lpFile = L"cmd.exe";
-    // sei.lpParameters = command.c_str();
-    // sei.nShow = SW_HIDE;
-
-    // ShellExecuteEx(&sei);
+AutoBrightness::AutoBrightness(QObject* parent): QObject(parent) {
+    // 禁用自动曝光和自动增益
 
 
-    system(command.c_str());
+
+    return;
 }
 
-void AutoBrightness() {
-    cv::VideoCapture cap; // 打开默认摄像头
+AutoBrightness::~AutoBrightness(){
 
-    // 禁用自动曝光和自动增益
-    cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0.25); // 0.25表示手动模式
-    cap.set(cv::CAP_PROP_EXPOSURE, -2); // 设置曝光值，具体值需要根据摄像头型号调整
-    cap.set(cv::CAP_PROP_GAIN, 0); // 设置增益值
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, 10);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, 10);
-    cap.set(cv::CAP_PROP_FPS, 5);
+}
 
+AutoBrightness* AutoBrightness::getInstance(){
+    static AutoBrightness instance;
+    return &instance;
+}
+
+
+void AutoBrightness::start(){
+    m_cap.open(0);
+    m_cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0.25); // 0.25表示手动模式
+    m_cap.set(cv::CAP_PROP_EXPOSURE, 0); // 设置曝光值，具体值需要根据摄像头型号调整
+    m_cap.set(cv::CAP_PROP_GAIN, 0); // 设置增益值
+    m_cap.set(cv::CAP_PROP_FRAME_WIDTH, 10);
+    m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, 10);
+    m_cap.set(cv::CAP_PROP_FPS, 1);
     while (true) {
-        cap.open(0);
-        if (!cap.isOpened()) {
+
+        if (!m_cap.isOpened()) {
             std::cerr << "Error: Could not open camera." << std::endl;
             return;
         }
         cv::Mat frame;
-        cap >> frame; // 获取摄像头帧
-        cap.release();
+        m_cap >> frame; // 获取摄像头帧
+
         if (frame.empty()) {
             std::cerr << "Error: No captured frame." << std::endl;
             break;
@@ -64,13 +72,12 @@ void AutoBrightness() {
         // 计算平均亮度并设置屏幕亮度
         double brightness = getAverageBrightness(frame);
         int screenBrightness = static_cast<int>(brightness * 200 / 255); // 将亮度转换为0-100范围
-        SetBrightness(screenBrightness);
+        setBrightness(screenBrightness);
 
-        //Sleep(60000);
+        QThread::msleep(30000);
     }
+    m_cap.release();
 
-    cap.release();
-
-
-    return;
 }
+
+#include "moc_AutoBrightness.cpp"

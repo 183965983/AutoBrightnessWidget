@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "AutoBrightness.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -24,6 +25,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    std::unique_ptr<QThread> m_autoBrightThread;
+    QThread* m_autoBrightThread;
+    AutoBrightness* m_autoBrightness;
 };
 #endif // MAINWINDOW_H
