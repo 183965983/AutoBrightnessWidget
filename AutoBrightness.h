@@ -18,13 +18,12 @@ public:
     void update();
     void openCap();
     void releaseCap();
+    void setCamera();
 
 private:
     AutoBrightness(QObject *parent = nullptr);
     ~AutoBrightness();
-    double getAverageBrightness(const cv::Mat& frame);
-
-
+    int getBrightness(const cv::Mat& frame);
 
 private:
     void setBrightness(int);

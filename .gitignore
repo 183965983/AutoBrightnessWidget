@@ -1,6 +1,9 @@
 # This file is used to ignore files which are generated
 # ----------------------------------------------------------------------------
-
+.vs
+build
+out
+.git
 *~
 *.autosave
 *.a
@@ -72,3 +75,4 @@ CMakeLists.txt.user*
 *.dll
 *.exe
 
+*.vsidx
