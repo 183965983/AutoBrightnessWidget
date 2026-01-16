@@ -33,8 +33,9 @@ void MainWindow::on_pushButton_clicked()
         return; // Already running
     }
     
+    m_running = true;
     m_autoBrightThread = QThread::create(
-        [&](){
+        [this](){
             AutoBrightness::getInstance()->openCap();
             while(m_running){
                 AutoBrightness::getInstance()->update();
@@ -42,7 +43,6 @@ void MainWindow::on_pushButton_clicked()
             }
             AutoBrightness::getInstance()->releaseCap();
         });
-    m_running = true;
     m_autoBrightThread->start();
 
 }
