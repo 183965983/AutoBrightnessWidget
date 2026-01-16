@@ -9,6 +9,9 @@ on:
 jobs:
   release:
     runs-on: windows-2022  # Windows 11
+    permissions:
+      contents: write  # Required for creating releases
+      actions: read
     
     steps:
     - name: Checkout repository
