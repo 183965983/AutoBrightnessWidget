@@ -14,7 +14,10 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 
 
 # 设置 OpenCV 路径
-set(OpenCV_DIR "C:/OpenCV/opencv/build")
+# Allow overriding OpenCV_DIR via CMake command line (-DOpenCV_DIR=...)
+if(NOT DEFINED OpenCV_DIR)
+    set(OpenCV_DIR "C:/OpenCV/opencv/build")
+endif()
 find_package(OpenCV REQUIRED)
 include_directories("${OpenCV_INCLUDE_DIRS}")
 

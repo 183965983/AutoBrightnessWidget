@@ -34,10 +34,18 @@ jobs:
         $opencvInstaller = "opencv-installer.exe"
         
         Write-Host "Downloading OpenCV ${opencvVersion}..."
-        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller
+        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
         
         Write-Host "Extracting OpenCV..."
-        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv", "-y" -Wait
+        # Use 7zip to extract the self-extracting archive
+        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
+        
+        # Move extracted content to opencv directory
+        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
+        } else {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
         
         # Set OpenCV path
         echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV

@@ -33,10 +33,18 @@ jobs:
         $opencvInstaller = "opencv-installer.exe"
         
         Write-Host "Downloading OpenCV ${opencvVersion}..."
-        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller
+        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
         
         Write-Host "Extracting OpenCV..."
-        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv", "-y" -Wait
+        # Use 7zip to extract the self-extracting archive
+        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
+        
+        # Move extracted content to opencv directory
+        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
+        } else {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
         
         # Set OpenCV path
         echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
@@ -63,11 +71,20 @@ jobs:
         # Copy executable
         Copy-Item build/Release/AutoBrightnessWidget.exe release-package/
         
-        # Deploy Qt dependencies
-        & "$env:IQTA_TOOLS\Qt\6.5.0\msvc2019_64\bin\windeployqt.exe" release-package/AutoBrightnessWidget.exe
+        # Deploy Qt dependencies (Qt install action sets Qt6_DIR)
+        $qtPath = Split-Path (Split-Path $env:Qt6_DIR)
+        $windeployqt = Join-Path $qtPath "bin\windeployqt.exe"
+        if (Test-Path $windeployqt) {
+            & $windeployqt release-package/AutoBrightnessWidget.exe --release --no-compiler-runtime
+        } else {
+            Write-Host "Warning: windeployqt not found at $windeployqt"
+        }
         
         # Copy OpenCV DLLs
-        Copy-Item "$env:GITHUB_WORKSPACE\opencv\build\x64\vc16\bin\opencv_world*.dll" release-package/ -ErrorAction SilentlyContinue
+        $opencvBinPath = "$env:GITHUB_WORKSPACE\opencv\build\x64\vc16\bin"
+        if (Test-Path $opencvBinPath) {
+            Get-ChildItem "$opencvBinPath\opencv_world*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination release-package/
+        }
         
         # Create zip archive
         Compress-Archive -Path release-package\* -DestinationPath AutoBrightnessWidget-Windows-x64.zip
