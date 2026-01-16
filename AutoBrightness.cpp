@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 #include "AutoBrightness.h"
 #include <QString>
 #include <QProcess>
@@ -35,7 +35,7 @@ int AutoBrightness::getBrightness(const cv::Mat& frame) {
             sum += pixel[2];
         }
     }
-    return sum / 255/4;
+    return sum / (255 * 4);
 }
 
 
