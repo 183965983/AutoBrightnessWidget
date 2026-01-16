@@ -39,11 +39,23 @@ jobs:
         # Use 7zip to extract the self-extracting archive
         Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
         
+        # Validate extraction
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
+            Write-Error "OpenCV extraction failed"
+            exit 1
+        }
+        
         # Move extracted content to opencv directory
         if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
             Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
         } else {
             Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
+        
+        # Verify OpenCV build directory exists
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
+            Write-Error "OpenCV build directory not found after extraction"
+            exit 1
         }
         
         # Set OpenCV path
@@ -69,25 +81,45 @@ jobs:
         mkdir release-package
         
         # Copy executable
+        if (-not (Test-Path "build/Release/AutoBrightnessWidget.exe")) {
+            Write-Error "Application executable not found"
+            exit 1
+        }
         Copy-Item build/Release/AutoBrightnessWidget.exe release-package/
         
         # Deploy Qt dependencies (Qt install action sets Qt6_DIR)
         $qtPath = Split-Path (Split-Path $env:Qt6_DIR)
         $windeployqt = Join-Path $qtPath "bin\windeployqt.exe"
-        if (Test-Path $windeployqt) {
-            & $windeployqt release-package/AutoBrightnessWidget.exe --release --no-compiler-runtime
-        } else {
-            Write-Host "Warning: windeployqt not found at $windeployqt"
+        if (-not (Test-Path $windeployqt)) {
+            Write-Error "windeployqt not found at $windeployqt - Qt dependencies cannot be packaged"
+            exit 1
+        }
+        Write-Host "Running windeployqt..."
+        & $windeployqt release-package/AutoBrightnessWidget.exe --release --no-compiler-runtime
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "windeployqt failed with exit code $LASTEXITCODE"
+            exit 1
         }
         
         # Copy OpenCV DLLs
         $opencvBinPath = "$env:GITHUB_WORKSPACE\opencv\build\x64\vc16\bin"
-        if (Test-Path $opencvBinPath) {
-            Get-ChildItem "$opencvBinPath\opencv_world*.dll" -ErrorAction SilentlyContinue | Copy-Item -Destination release-package/
+        if (-not (Test-Path $opencvBinPath)) {
+            Write-Error "OpenCV bin directory not found at $opencvBinPath"
+            exit 1
         }
+        $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
+        if ($opencvDlls.Count -eq 0) {
+            Write-Error "No OpenCV DLLs found in $opencvBinPath"
+            exit 1
+        }
+        Write-Host "Copying OpenCV DLLs..."
+        $opencvDlls | Copy-Item -Destination release-package/
         
         # Create zip archive
+        Write-Host "Creating release archive..."
         Compress-Archive -Path release-package\* -DestinationPath AutoBrightnessWidget-Windows-x64.zip
+        
+        Write-Host "Package created successfully"
       shell: pwsh
     
     - name: Create Release

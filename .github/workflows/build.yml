@@ -40,11 +40,23 @@ jobs:
         # Use 7zip to extract the self-extracting archive
         Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
         
+        # Validate extraction
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
+            Write-Error "OpenCV extraction failed"
+            exit 1
+        }
+        
         # Move extracted content to opencv directory
         if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
             Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
         } else {
             Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
+        
+        # Verify OpenCV build directory exists
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
+            Write-Error "OpenCV build directory not found after extraction"
+            exit 1
         }
         
         # Set OpenCV path
