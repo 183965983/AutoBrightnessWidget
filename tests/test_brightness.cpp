@@ -189,4 +189,9 @@ private slots:
     }
 };
 
+// Factory function for creating test instance
+QObject* createTestBrightnessInstance() {
+    return new TestBrightness();
+}
+
 #include "test_brightness.moc"

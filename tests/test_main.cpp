@@ -1,6 +1,14 @@
 #include <QTest>
 #include <QApplication>
 
+// Forward declarations
+class TestBrightness;
+class TestUI;
+
+// External test class declarations (defined in their respective .cpp files)
+extern QObject* createTestBrightnessInstance();
+extern QObject* createTestUIInstance();
+
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
@@ -9,14 +17,16 @@ int main(int argc, char *argv[])
     
     // Run brightness calculation tests
     {
-        TestBrightness tc;
-        status |= QTest::qExec(&tc, argc, argv);
+        QObject* tc = createTestBrightnessInstance();
+        status |= QTest::qExec(tc, argc, argv);
+        delete tc;
     }
     
     // Run UI tests
     {
-        TestUI tc;
-        status |= QTest::qExec(&tc, argc, argv);
+        QObject* tc = createTestUIInstance();
+        status |= QTest::qExec(tc, argc, argv);
+        delete tc;
     }
     
     return status;
