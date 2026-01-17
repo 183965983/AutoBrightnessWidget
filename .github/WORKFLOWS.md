@@ -12,28 +12,18 @@ This repository uses GitHub Actions to automate building, testing, and releasing
 - Manual dispatch
 
 **What it does:**
+
+This unified workflow consolidates build, test, and packaging into a single pipeline with three jobs:
+
+#### Job 1: Build
 - Builds the application on Windows 2022 (Windows 11)
 - Installs Qt 6.5.0
-- Installs OpenCV 4.8.1
-- Configures and builds with CMake and Visual Studio 2022
+- Installs OpenCV 4.10.0
+- Configures and builds with CMake and Visual Studio 2022 (with BUILD_TESTS=ON)
 - Uploads build artifacts (executable and DLLs)
 
-**Artifacts:**
-- Build artifacts are available for download after each successful build
-- Artifact name: `AutoBrightnessWidget-Windows-x64`
-
-### 2. Test Workflow (`.github/workflows/test.yml`)
-
-**Triggers:**
-- Push to `main`, `master`, or `develop` branches
-- Pull requests to `main`, `master`, or `develop` branches
-- Manual dispatch
-
-**What it does:**
-- Builds the application on Windows 2022 (Windows 11)
-- Installs Qt 6.5.0
-- Installs OpenCV 4.8.1
-- Configures and builds with CMake and Visual Studio 2022
+#### Job 2: Test
+- Depends on the build job
 - Runs comprehensive tests:
   - Camera functionality tests (using mocked camera with grayscale test images)
   - Windows brightness adjustment API tests (actual API calls with verification)
@@ -45,28 +35,24 @@ This repository uses GitHub Actions to automate building, testing, and releasing
 - Qt widget creation and interaction
 - UI button functionality
 
-### 3. PR Check (Merge Pipeline) Workflow (`.github/workflows/pr-check.yml`)
-
-**Triggers:**
-- Pull requests to `main`, `master`, or `develop` branches
-- Manual dispatch
-
-**What it does:**
-- Runs comprehensive pre-merge validation in three stages:
-  1. **Build**: Compiles the application with all dependencies
-  2. **Test**: Executes the full test suite (camera mocking, brightness API, UI tests)
-  3. **Package**: Creates a release package to verify packaging process
+#### Job 3: Package
+- Depends on the test job
+- **Only runs on push to main branches** (not on pull requests)
+- Packages the application with all dependencies using `windeployqt`
+- Creates a ZIP archive with the executable and all required DLLs
+- Uploads the package as an artifact
 
 **Purpose:**
-- Serves as a required status check before merging pull requests
-- Ensures all changes pass build, test, and packaging before being merged
+- Serves as the primary CI/CD pipeline
+- **Required for pull requests**: PRs must pass build and test jobs before merging
+- Automatically packages releases when code is pushed to main branches
 - Prevents broken code from entering main branches
 
 **Artifacts:**
-- Build artifacts from the build stage
-- Release package from the package stage
+- Build artifacts: `build-artifacts` (from build job)
+- Release package: `release-package` (from package job, only on push to main branches)
 
-### 4. Release Workflow (`.github/workflows/release.yml`)
+### 2. Release Workflow (`.github/workflows/release.yml`)
 
 **Triggers:**
 - Push of tags matching `v*.*.*` (e.g., `v0.1.0`, `v1.2.3`)
@@ -75,7 +61,7 @@ This repository uses GitHub Actions to automate building, testing, and releasing
 **What it does:**
 - Builds the application on Windows 2022 (Windows 11)
 - Installs Qt 6.5.0
-- Installs OpenCV 4.8.1
+- Installs OpenCV 4.10.0
 - Configures and builds with CMake and Visual Studio 2022
 - Packages the application with all dependencies using `windeployqt`
 - Creates a ZIP archive with the executable and all required DLLs
@@ -100,7 +86,7 @@ The workflow will automatically:
 
 - **Operating System:** Windows Server 2022 (Windows 11 compatible)
 - **Qt Version:** 6.5.0 (MSVC 2019 64-bit)
-- **OpenCV Version:** 4.8.1
+- **OpenCV Version:** 4.10.0
 - **Compiler:** Visual Studio 2022 (MSVC)
 - **Architecture:** x64
 
@@ -195,7 +181,19 @@ Add status badges to your README:
 
 ```markdown
 [![Build](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml)
-[![Test](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml)
-[![PR Check](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml)
 [![Release](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml)
 ```
+
+## Pipeline Configuration Summary
+
+The repository now uses a streamlined CI/CD setup:
+
+1. **For Pull Requests**: The `build.yml` workflow runs build and test jobs. PRs must pass both jobs before merging.
+2. **For Pushes to Main Branches**: The `build.yml` workflow runs build, test, and package jobs.
+3. **For Tag Pushes**: The `release.yml` workflow creates official GitHub releases with packaged binaries.
+
+This configuration ensures:
+- All PRs are validated before merging
+- Continuous integration on main branches
+- Automated release process
+- Efficient use of CI/CD resources
