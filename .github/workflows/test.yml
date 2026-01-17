@@ -71,7 +71,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR"
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR" -DBUILD_TESTS=ON
       shell: pwsh
     
     - name: Build
@@ -82,7 +82,17 @@ jobs:
     
     - name: Run tests
       run: |
-        Write-Host "No tests currently configured in the project."
-        Write-Host "To add tests, create a test directory with unit tests and update this workflow."
-        Write-Host "Build completed successfully - basic validation passed."
+        cd build/Release
+        if (Test-Path "AutoBrightnessWidgetTests.exe") {
+            Write-Host "Running AutoBrightnessWidget Tests..."
+            .\AutoBrightnessWidgetTests.exe
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Tests failed with exit code $LASTEXITCODE"
+                exit 1
+            }
+            Write-Host "All tests passed successfully!"
+        } else {
+            Write-Warning "Test executable not found at build/Release/AutoBrightnessWidgetTests.exe"
+            Write-Host "Build completed successfully - basic validation passed."
+        }
       shell: pwsh

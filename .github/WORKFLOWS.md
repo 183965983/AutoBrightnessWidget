@@ -34,11 +34,39 @@ This repository uses GitHub Actions to automate building, testing, and releasing
 - Installs Qt 6.5.0
 - Installs OpenCV 4.8.1
 - Configures and builds with CMake and Visual Studio 2022
-- Runs tests (currently placeholder - extend as needed)
+- Runs comprehensive tests:
+  - Camera functionality tests (using mocked camera with grayscale test images)
+  - Windows brightness adjustment API tests (actual API calls with verification)
+  - Qt UI functionality tests (with mocked camera)
 
-**Note:** This workflow currently validates that the build completes successfully. Add unit tests to the project and update the "Run tests" step to execute them.
+**Test Coverage:**
+- Brightness calculation algorithm with dark, medium, and bright test images
+- Windows WMI brightness control interface (sets and verifies brightness levels)
+- Qt widget creation and interaction
+- UI button functionality
 
-### 3. Release Workflow (`.github/workflows/release.yml`)
+### 3. PR Check (Merge Pipeline) Workflow (`.github/workflows/pr-check.yml`)
+
+**Triggers:**
+- Pull requests to `main`, `master`, or `develop` branches
+- Manual dispatch
+
+**What it does:**
+- Runs comprehensive pre-merge validation in three stages:
+  1. **Build**: Compiles the application with all dependencies
+  2. **Test**: Executes the full test suite (camera mocking, brightness API, UI tests)
+  3. **Package**: Creates a release package to verify packaging process
+
+**Purpose:**
+- Serves as a required status check before merging pull requests
+- Ensures all changes pass build, test, and packaging before being merged
+- Prevents broken code from entering main branches
+
+**Artifacts:**
+- Build artifacts from the build stage
+- Release package from the package stage
+
+### 4. Release Workflow (`.github/workflows/release.yml`)
 
 **Triggers:**
 - Push of tags matching `v*.*.*` (e.g., `v0.1.0`, `v1.2.3`)
@@ -112,19 +140,25 @@ Edit the `opencvVersion` variable in the "Install OpenCV" step:
 
 ### Adding Tests
 
-To add actual tests:
+Tests are now fully implemented using Qt Test framework. To add more tests:
 
-1. Create test files in your project (e.g., using Qt Test framework)
-2. Update `CMakeLists.txt` to include test targets
-3. Update the "Run tests" step in `test.yml`:
+1. Create new test files in the `tests/` directory
+2. Include them in `tests/test_main.cpp`
+3. Update `tests/CMakeLists.txt` if needed
+4. Test locally:
+   ```cmd
+   mkdir build
+   cd build
+   cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="C:\path\to\opencv\build" -DBUILD_TESTS=ON
+   cmake --build . --config Release
+   Release\AutoBrightnessWidgetTests.exe
+   ```
 
-```yaml
-- name: Run tests
-  run: |
-    cd build
-    ctest -C Release --output-on-failure
-  shell: pwsh
-```
+**Current Test Structure:**
+- `test_brightness.cpp`: Camera mocking and brightness API tests
+- `test_ui.cpp`: Qt UI widget tests
+- `MockCamera`: Stub class for camera input using grayscale test images
+- Test images: Located in `tests/test_images/` (dark, medium, bright)
 
 ## Troubleshooting
 
@@ -162,5 +196,6 @@ Add status badges to your README:
 ```markdown
 [![Build](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml)
 [![Test](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml)
+[![PR Check](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml)
 [![Release](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml)
 ```
