@@ -256,8 +256,7 @@ jobs:
         }
         Write-Host "Running windeployqt..."
         $exePath = "release-package\AutoBrightnessWidget.exe"
-        $targetDir = "release-package"
-        & $windeployqt $exePath --release --no-compiler-runtime --dir $targetDir
+        & $windeployqt $exePath --release --no-compiler-runtime
         if ($LASTEXITCODE -ne 0) {
             Write-Error "windeployqt failed with exit code $LASTEXITCODE"
             exit 1
