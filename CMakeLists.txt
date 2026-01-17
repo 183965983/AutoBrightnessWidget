@@ -9,8 +9,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets LinguistTools Test)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools Test)
 
 
 # 设置 OpenCV 路径
@@ -86,4 +86,12 @@ install(TARGETS AutoBrightnessWidget
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(AutoBrightnessWidget)
+endif()
+
+# Test configuration
+option(BUILD_TESTS "Build tests" OFF)
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
 endif()
