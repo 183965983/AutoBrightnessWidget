@@ -70,6 +70,164 @@ jobs:
       run: |
         mkdir build
         cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR" -DBUILD_TESTS=ON
+      shell: pwsh
+    
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config Release
+      shell: pwsh
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          build/Release/*.exe
+          build/Release/*.dll
+        if-no-files-found: warn
+  
+  test:
+    needs: build
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up MSVC
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    
+    - name: Install OpenCV
+      run: |
+        # Download and extract OpenCV
+        $opencvVersion = "4.10.0"
+        $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
+        $opencvInstaller = "opencv-installer.exe"
+        
+        Write-Host "Downloading OpenCV ${opencvVersion}..."
+        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
+        
+        Write-Host "Extracting OpenCV..."
+        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
+            Write-Error "OpenCV extraction failed"
+            exit 1
+        }
+        
+        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
+        } else {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
+            Write-Error "OpenCV build directory not found after extraction"
+            exit 1
+        }
+        
+        echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
+        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
+      shell: pwsh
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR" -DBUILD_TESTS=ON
+      shell: pwsh
+    
+    - name: Build with Tests
+      run: |
+        cd build
+        cmake --build . --config Release
+      shell: pwsh
+    
+    - name: Run Tests
+      run: |
+        cd build/Release
+        if (Test-Path "AutoBrightnessWidgetTests.exe") {
+            Write-Host "Running AutoBrightnessWidget Tests..."
+            .\AutoBrightnessWidgetTests.exe
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Tests failed with exit code $LASTEXITCODE"
+                exit 1
+            }
+            Write-Host "All tests passed successfully!"
+        } else {
+            Write-Warning "Test executable not found. Skipping tests."
+        }
+      shell: pwsh
+  
+  package:
+    needs: test
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up MSVC
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    
+    - name: Install OpenCV
+      run: |
+        $opencvVersion = "4.10.0"
+        $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
+        $opencvInstaller = "opencv-installer.exe"
+        
+        Write-Host "Downloading OpenCV ${opencvVersion}..."
+        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
+        
+        Write-Host "Extracting OpenCV..."
+        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
+            Write-Error "OpenCV extraction failed"
+            exit 1
+        }
+        
+        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
+        } else {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
+            Write-Error "OpenCV build directory not found after extraction"
+            exit 1
+        }
+        
+        echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
+        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
+      shell: pwsh
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
         cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR"
       shell: pwsh
     
@@ -79,11 +237,54 @@ jobs:
         cmake --build . --config Release
       shell: pwsh
     
-    - name: Upload artifacts
+    - name: Package application
+      run: |
+        mkdir release-package
+        
+        # Copy executable
+        if (-not (Test-Path "build/Release/AutoBrightnessWidget.exe")) {
+            Write-Error "Application executable not found"
+            exit 1
+        }
+        Copy-Item build/Release/AutoBrightnessWidget.exe release-package/
+        
+        # Deploy Qt dependencies
+        $windeployqt = Join-Path $env:Qt6_DIR "bin\windeployqt.exe"
+        if (-not (Test-Path $windeployqt)) {
+            Write-Error "windeployqt not found at $windeployqt"
+            exit 1
+        }
+        Write-Host "Running windeployqt..."
+        & $windeployqt release-package/AutoBrightnessWidget.exe --release --no-compiler-runtime --dir release-package
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "windeployqt failed with exit code $LASTEXITCODE"
+            exit 1
+        }
+        
+        # Copy OpenCV DLLs
+        $opencvBinPath = "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin"
+        if (-not (Test-Path $opencvBinPath)) {
+            Write-Error "OpenCV bin directory not found at $opencvBinPath"
+            exit 1
+        }
+        $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
+        if ($opencvDlls.Count -eq 0) {
+            Write-Error "No OpenCV DLLs found in $opencvBinPath"
+            exit 1
+        }
+        Write-Host "Copying OpenCV DLLs..."
+        $opencvDlls | Copy-Item -Destination release-package/
+        
+        # Create zip archive
+        Write-Host "Creating release archive..."
+        Compress-Archive -Path release-package\* -DestinationPath AutoBrightnessWidget-Windows-x64.zip
+        
+        Write-Host "Package created successfully"
+      shell: pwsh
+    
+    - name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: AutoBrightnessWidget-Windows-x64
-        path: |
-          build/Release/*.exe
-          build/Release/*.dll
-        if-no-files-found: warn
+        name: release-package
+        path: AutoBrightnessWidget-Windows-x64.zip
+        if-no-files-found: error

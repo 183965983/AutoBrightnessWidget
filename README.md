@@ -1,8 +1,6 @@
 # AutoBrightnessWidget
 
 [![Build](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml)
-[![Test](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml)
-[![PR Check](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml)
 [![Release](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml)
 
 A Qt-based desktop application for automatic screen brightness adjustment using camera input and OpenCV.
@@ -65,15 +63,15 @@ This project uses GitHub Actions for continuous integration and deployment. See 
 
 ### Workflows
 
-- **Build**: Automatically builds on every push/PR to main branches
-- **Test**: Runs comprehensive tests on every push/PR to main branches
-  - Camera functionality tests (using mocked camera with grayscale test images)
-  - Windows brightness adjustment API tests (actual API calls with verification)
-  - Qt UI functionality tests
-- **PR Check (Merge Pipeline)**: Runs before merging pull requests (required status check)
-  - Executes full build, test, and package steps
-  - Must pass before PR can be merged
-- **Release**: Creates releases when version tags are pushed
+- **Build**: Unified CI/CD pipeline with three jobs
+  - **Build Job**: Compiles the application with BUILD_TESTS=ON
+  - **Test Job**: Runs comprehensive tests (depends on build)
+    - Camera functionality tests (using mocked camera with grayscale test images)
+    - Windows brightness adjustment API tests (actual API calls with verification)
+    - Qt UI functionality tests
+  - **Package Job**: Creates release packages (only on push to main branches, depends on test)
+  - **Purpose**: Required for PRs - must pass build and test before merging
+- **Release**: Creates GitHub releases when version tags are pushed
 
 ### Testing
 

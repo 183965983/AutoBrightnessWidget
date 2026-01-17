@@ -121,4 +121,9 @@ private slots:
     }
 };
 
+// Factory function for creating test instance
+QObject* createTestUIInstance() {
+    return new TestUI();
+}
+
 #include "test_ui.moc"
