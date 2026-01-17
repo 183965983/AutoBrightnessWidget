@@ -24,7 +24,6 @@ jobs:
       with:
         version: '6.5.0'
         arch: 'win64_msvc2019_64'
-        modules: 'qtbase qttools'
         cache: true
     
     - name: Install OpenCV
@@ -106,7 +105,6 @@ jobs:
       with:
         version: '6.5.0'
         arch: 'win64_msvc2019_64'
-        modules: 'qtbase qttools'
         cache: true
     
     - name: Install OpenCV
@@ -190,7 +188,6 @@ jobs:
       with:
         version: '6.5.0'
         arch: 'win64_msvc2019_64'
-        modules: 'qtbase qttools'
         cache: true
     
     - name: Install OpenCV
