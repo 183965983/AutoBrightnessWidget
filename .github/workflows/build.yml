@@ -31,7 +31,7 @@ jobs:
     - name: Install OpenCV
       run: |
         # Download and extract OpenCV
-        $opencvVersion = "4.8.1"
+        $opencvVersion = "4.10.0"
         $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
         $opencvInstaller = "opencv-installer.exe"
         
@@ -63,7 +63,7 @@ jobs:
         
         # Set OpenCV path
         echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
-        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc16\bin" >> $env:GITHUB_PATH
+        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
       shell: pwsh
     
     - name: Configure CMake
