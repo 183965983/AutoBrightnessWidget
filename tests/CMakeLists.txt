@@ -3,8 +3,6 @@
 # Create test executable
 set(TEST_SOURCES
     test_main.cpp
-    test_brightness.cpp
-    test_ui.cpp
     MockCamera.cpp
     MockCamera.h
 )

@@ -1,13 +1,13 @@
 #include <QTest>
-#include <QCoreApplication>
+#include <QApplication>
 
-// Forward declarations of test classes
-class TestBrightness;
-class TestUI;
+// Include test classes
+#include "test_brightness.cpp"
+#include "test_ui.cpp"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv);
+    QApplication app(argc, argv);
     
     int status = 0;
     
