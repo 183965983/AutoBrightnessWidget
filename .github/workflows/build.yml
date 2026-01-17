@@ -249,8 +249,7 @@ jobs:
         Copy-Item build/Release/AutoBrightnessWidget.exe release-package/
         
         # Deploy Qt dependencies
-        $qtPath = Split-Path (Split-Path $env:Qt6_DIR)
-        $windeployqt = Join-Path $qtPath "bin\windeployqt.exe"
+        $windeployqt = Join-Path $env:Qt6_DIR "bin\windeployqt.exe"
         if (-not (Test-Path $windeployqt)) {
             Write-Error "windeployqt not found at $windeployqt"
             exit 1
