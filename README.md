@@ -2,6 +2,7 @@
 
 [![Build](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml)
 [![Test](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/test.yml)
+[![PR Check](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/pr-check.yml)
 [![Release](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml/badge.svg)](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/release.yml)
 
 A Qt-based desktop application for automatic screen brightness adjustment using camera input and OpenCV.
@@ -65,8 +66,31 @@ This project uses GitHub Actions for continuous integration and deployment. See 
 ### Workflows
 
 - **Build**: Automatically builds on every push/PR to main branches
-- **Test**: Runs tests on every push/PR to main branches
+- **Test**: Runs comprehensive tests on every push/PR to main branches
+  - Camera functionality tests (using mocked camera with grayscale test images)
+  - Windows brightness adjustment API tests (actual API calls with verification)
+  - Qt UI functionality tests
+- **PR Check (Merge Pipeline)**: Runs before merging pull requests (required status check)
+  - Executes full build, test, and package steps
+  - Must pass before PR can be merged
 - **Release**: Creates releases when version tags are pushed
+
+### Testing
+
+The test suite includes:
+
+1. **Brightness Calculation Tests**: Tests the brightness calculation algorithm using stubbed camera input with grayscale test images
+2. **Windows Brightness API Tests**: Tests actual Windows brightness adjustment interface by setting and verifying brightness levels
+3. **UI Tests**: Tests Qt widget functionality with mocked camera input
+
+Run tests locally:
+```cmd
+mkdir build
+cd build
+cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="C:\path\to\opencv\build" -DBUILD_TESTS=ON
+cmake --build . --config Release
+Release\AutoBrightnessWidgetTests.exe
+```
 
 ### Creating a Release
 
