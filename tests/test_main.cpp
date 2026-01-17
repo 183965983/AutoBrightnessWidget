@@ -1,7 +1,9 @@
 #include <QTest>
 #include <QApplication>
 
-// Include test classes
+// Note: Including .cpp files here is intentional for Qt Test framework.
+// Each test file contains Qt MOC includes that need to be in the same
+// translation unit. This is a common pattern for Qt Test organization.
 #include "test_brightness.cpp"
 #include "test_ui.cpp"
 
