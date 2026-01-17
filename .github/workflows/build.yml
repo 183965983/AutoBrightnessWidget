@@ -1,0 +1,90 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022  # Windows 11
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up MSVC
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+        modules: 'qtbase qttools'
+        cache: true
+    
+    - name: Install OpenCV
+      run: |
+        # Download and extract OpenCV
+        $opencvVersion = "4.8.1"
+        $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
+        $opencvInstaller = "opencv-installer.exe"
+        
+        Write-Host "Downloading OpenCV ${opencvVersion}..."
+        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
+        
+        Write-Host "Extracting OpenCV..."
+        # Use 7zip to extract the self-extracting archive
+        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
+        
+        # Validate extraction
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
+            Write-Error "OpenCV extraction failed"
+            exit 1
+        }
+        
+        # Move extracted content to opencv directory
+        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
+        } else {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
+        
+        # Verify OpenCV build directory exists
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
+            Write-Error "OpenCV build directory not found after extraction"
+            exit 1
+        }
+        
+        # Set OpenCV path
+        echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
+        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc16\bin" >> $env:GITHUB_PATH
+      shell: pwsh
+    
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR"
+      shell: pwsh
+    
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config Release
+      shell: pwsh
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: AutoBrightnessWidget-Windows-x64
+        path: |
+          build/Release/*.exe
+          build/Release/*.dll
+        if-no-files-found: warn
