@@ -37,7 +37,7 @@ This unified workflow consolidates build, test, and packaging into a single pipe
 
 #### Job 3: Package
 - Depends on the test job
-- **Only runs on push to main branches** (not on pull requests)
+- **Only runs on push to `main`, `master`, `develop`, or `dev` branches** (not on pull requests)
 - Packages the application with all dependencies using `windeployqt`
 - Creates a ZIP archive with the executable and all required DLLs
 - Uploads the package as an artifact
@@ -189,7 +189,7 @@ Add status badges to your README:
 The repository now uses a streamlined CI/CD setup:
 
 1. **For Pull Requests**: The `build.yml` workflow runs build and test jobs. PRs must pass both jobs before merging.
-2. **For Pushes to Main Branches**: The `build.yml` workflow runs build, test, and package jobs.
+2. **For Pushes to `main`, `master`, `develop`, or `dev` branches**: The `build.yml` workflow runs build, test, and package jobs.
 3. **For Tag Pushes**: The `release.yml` workflow creates official GitHub releases with packaged binaries.
 
 This configuration ensures:

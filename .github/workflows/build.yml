@@ -174,7 +174,7 @@ jobs:
   package:
     needs: test
     # Only run package on push to main branches, not on PRs
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/dev')
     runs-on: windows-2022
     permissions:
       contents: read
