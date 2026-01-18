@@ -387,12 +387,18 @@ The test job automatically captures a screenshot of the running application to p
    - Uses .NET libraries (System.Windows.Forms and System.Drawing) to capture the entire primary screen
    - Saves the screenshot as `screenshots/app-screenshot.png`
 
-2. **Upload**: The screenshot is uploaded as a GitHub Actions artifact named `app-screenshot` with a 7-day retention period.
+2. **Upload to Image Hosting**: The screenshot is automatically uploaded to Imgur (free image hosting service):
+   - Converts image to base64 format
+   - Uses Imgur's anonymous upload API
+   - Returns a publicly accessible URL
 
-3. **PR Comment**: When the workflow is triggered by a pull request:
+3. **Upload as Artifact**: The screenshot is also uploaded as a GitHub Actions artifact named `app-screenshot` with a 7-day retention period (backup option).
+
+4. **PR Comment**: When the workflow is triggered by a pull request:
    - A comment is automatically posted to the PR
-   - The comment includes a link to the workflow run
-   - Instructions for downloading the screenshot artifact are provided
+   - **The screenshot is embedded directly in the comment** (when Imgur upload succeeds)
+   - Falls back to artifact download link if upload fails
+   - Includes a link to the workflow run for full details
 
 ### Implementation Details
 
@@ -416,21 +422,38 @@ $bitmap.Dispose()
 
 **GitHub Actions Configuration:**
 ```yaml
+# Upload screenshot as artifact (backup)
 - name: Upload screenshot
   if: always()
   uses: actions/upload-artifact@v4
   with:
     name: app-screenshot
     path: screenshots/app-screenshot.png
-    if-no-files-found: warn
     retention-days: 7
 
+# Upload to Imgur for embedding in PR comments
+- name: Upload screenshot to Imgur
+  if: github.event_name == 'pull_request'
+  id: imgur_step
+  continue-on-error: true
+  run: |
+    # Convert to base64 and upload to Imgur
+    $bytes = [System.IO.File]::ReadAllBytes($screenshotPath)
+    $base64 = [System.Convert]::ToBase64String($bytes)
+    $headers = @{ "Authorization" = "Client-ID 546c25a59c58ad7" }
+    $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" ...
+  shell: pwsh
+
+# Post comment with embedded screenshot
 - name: Comment screenshot on PR
   if: github.event_name == 'pull_request'
   uses: actions/github-script@v7
   with:
     script: |
-      # Posts comment with download link to PR
+      // Embed screenshot if Imgur upload succeeded
+      if (imgurSuccess && imgurUrl) {
+        comment = `![Screenshot](${imgurUrl})`;
+      }
 ```
 
 ### Required Permissions
@@ -448,21 +471,55 @@ test:
 ### Viewing Screenshots
 
 **For Pull Requests:**
-- The screenshot info is automatically posted as a comment
-- Click the workflow run link in the comment
-- Download the `app-screenshot` artifact
+- **The screenshot is displayed directly in the PR comment** 🎉
+- No need to download - just scroll through the PR comments
+- If Imgur upload fails, a download link to the artifact is provided as fallback
 
 **For Direct Branch Pushes:**
 - Go to the Actions tab
 - Select the workflow run
 - Download the `app-screenshot` artifact from the Artifacts section
 
+### PR Comment Example
+
+When the workflow runs on a PR, you'll see a comment like this:
+
+```markdown
+## 🖼️ Application Screenshot
+
+✅ Application launched successfully!
+
+![Screenshot](https://i.imgur.com/xxxxx.png)
+
+**Test Run:** [Workflow #12345](workflow-url)
+
+---
+*Screenshot captured during automated testing*
+```
+
+The screenshot is embedded inline, making it easy to visually verify the UI without downloading files.
+
 ### Benefits
 
-- **Visual Verification**: Quickly verify UI renders correctly
+- **Visual Verification**: Screenshot is **embedded directly in PR comments** for instant viewing
+- **No Download Required**: Review UI changes without leaving the PR page
 - **Regression Detection**: Compare screenshots across commits to spot UI changes
 - **Documentation**: Screenshots serve as visual documentation of the application state
 - **Debugging**: Helps diagnose UI issues in CI environment
+- **Reliable**: Falls back to artifact download if image hosting fails
+
+### Technical Details
+
+**Image Hosting:**
+- Uses Imgur's free anonymous upload API
+- No account or authentication required
+- Images are publicly accessible via direct links
+- Perfect for embedding in GitHub comments
+
+**Fallback Mechanism:**
+- If Imgur upload fails (`continue-on-error: true`), the workflow continues
+- PR comment will include an artifact download link instead
+- Ensures screenshots are always available in some form
 
 ### Limitations
 
@@ -470,6 +527,8 @@ test:
 - Only available on Windows runners (uses Windows-specific .NET APIs)
 - Requires GUI application to be visible on screen
 - May capture background applications if they overlap
+- **Imgur uploads are public** - anyone with the link can view the screenshot
+- Imgur has rate limits for anonymous uploads (though generous for typical usage)
 
 ## Related Documentation
 
