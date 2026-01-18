@@ -8,21 +8,33 @@
 class BrightnessCalculator {
 public:
     // Replicate the brightness calculation logic from AutoBrightness
-    static int getBrightness(const cv::Mat& frame) {
+    static int getBrightness(const cv::Mat& frame, int samplePoints = 5) {
+        if (frame.empty() || samplePoints < 2) {
+            return 0;
+        }
+        
         int rows = frame.rows;
         int cols = frame.cols;
-        int rowsInterval = rows / 5;
-        int colsInterval = cols / 5;
+        int rowsInterval = rows / samplePoints;
+        int colsInterval = cols / samplePoints;
+        
+        if (rowsInterval == 0) rowsInterval = 1;
+        if (colsInterval == 0) colsInterval = 1;
+        
         int sum = 0;
+        int count = 0;
         
         for(int i = 0; i < rows; i += rowsInterval) {
             for(int j = 0; j < cols; j += colsInterval) {
                 cv::Vec3b pixel = frame.at<cv::Vec3b>(i, j);
                 sum += pixel[2];  // Red channel
+                count++;
             }
         }
         
-        return sum / (255 * 4);
+        if (count == 0) return 0;
+        
+        return sum / (count * 255 / 100);  // 返回0-100的百分比值
     }
     
     // Get Windows brightness using PowerShell
@@ -136,6 +148,37 @@ private slots:
         QVERIFY(brightness <= 100);
         
         qDebug() << "Bright image brightness:" << brightness;
+    }
+    
+    void test_sample_points_variation() {
+        // Test that different sample point values produce reasonable results
+        MockCamera mockCamera;
+        QVERIFY(mockCamera.loadTestImage("test_images/medium.jpg"));
+        
+        cv::Mat frame = mockCamera.getFrame();
+        QVERIFY(!frame.empty());
+        
+        // Test with different sample point counts
+        int brightness2 = BrightnessCalculator::getBrightness(frame, 2);
+        int brightness5 = BrightnessCalculator::getBrightness(frame, 5);
+        int brightness10 = BrightnessCalculator::getBrightness(frame, 10);
+        int brightness20 = BrightnessCalculator::getBrightness(frame, 20);
+        
+        qDebug() << "Brightness with 2x2 sampling:" << brightness2;
+        qDebug() << "Brightness with 5x5 sampling:" << brightness5;
+        qDebug() << "Brightness with 10x10 sampling:" << brightness10;
+        qDebug() << "Brightness with 20x20 sampling:" << brightness20;
+        
+        // All should be in reasonable range for medium image
+        QVERIFY(brightness2 >= 30 && brightness2 <= 70);
+        QVERIFY(brightness5 >= 30 && brightness5 <= 70);
+        QVERIFY(brightness10 >= 30 && brightness10 <= 70);
+        QVERIFY(brightness20 >= 30 && brightness20 <= 70);
+        
+        // Results should be relatively close to each other (within 20 points)
+        QVERIFY(qAbs(brightness2 - brightness5) <= 20);
+        QVERIFY(qAbs(brightness5 - brightness10) <= 20);
+        QVERIFY(qAbs(brightness10 - brightness20) <= 20);
     }
 
     void test_windows_brightness_api() {
