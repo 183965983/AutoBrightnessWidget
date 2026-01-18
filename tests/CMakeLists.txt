@@ -5,6 +5,7 @@ set(TEST_SOURCES
     test_main.cpp
     test_brightness.cpp
     test_ui.cpp
+    test_new_features.cpp
     MockCamera.cpp
     MockCamera.h
 )
