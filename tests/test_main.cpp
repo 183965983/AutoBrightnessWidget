@@ -4,10 +4,12 @@
 // Forward declarations
 class TestBrightness;
 class TestUI;
+class TestNewFeatures;
 
 // External test class declarations (defined in their respective .cpp files)
 extern QObject* createTestBrightnessInstance();
 extern QObject* createTestUIInstance();
+extern QObject* createTestNewFeaturesInstance();
 
 int main(int argc, char *argv[])
 {
@@ -25,6 +27,13 @@ int main(int argc, char *argv[])
     // Run UI tests
     {
         QObject* tc = createTestUIInstance();
+        status |= QTest::qExec(tc, argc, argv);
+        delete tc;
+    }
+    
+    // Run new features tests
+    {
+        QObject* tc = createTestNewFeaturesInstance();
         status |= QTest::qExec(tc, argc, argv);
         delete tc;
     }

@@ -5,6 +5,7 @@ set(TEST_SOURCES
     test_main.cpp
     test_brightness.cpp
     test_ui.cpp
+    test_new_features.cpp
     MockCamera.cpp
     MockCamera.h
 )
@@ -14,6 +15,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${TEST_SOURCES}
         ../AutoBrightness.cpp
         ../AutoBrightness.h
+        ../CurveEditorWidget.cpp
+        ../CurveEditorWidget.h
+        ../CurveEditorDialog.cpp
+        ../CurveEditorDialog.h
         ../mainwindow.cpp
         ../mainwindow.h
         ../mainwindow.ui
@@ -23,6 +28,10 @@ else()
         ${TEST_SOURCES}
         ../AutoBrightness.cpp
         ../AutoBrightness.h
+        ../CurveEditorWidget.cpp
+        ../CurveEditorWidget.h
+        ../CurveEditorDialog.cpp
+        ../CurveEditorDialog.h
         ../mainwindow.cpp
         ../mainwindow.h
     )
