@@ -20,27 +20,40 @@ void AutoBrightness::setBrightness(int brightness) {
 
 // 获取图像平均亮度
 int AutoBrightness::getBrightness(const cv::Mat& frame) {
-    // cv::Mat grayFrame;
-    // cvtColor(frame, grayFrame, cv::COLOR_BGR2GRAY);
-    // cv::Scalar meanScalar = mean(grayFrame);
-    // return meanScalar[0];
-    static int rows = frame.rows;
-    static int cols = frame.cols;
-    static int rowsInterval = rows/5;
-    static int colsInterval = cols/5;
+    if (frame.empty() || m_samplePoints < 2) {
+        return 0;
+    }
+    
+    int rows = frame.rows;
+    int cols = frame.cols;
+    int rowsInterval = rows / m_samplePoints;
+    int colsInterval = cols / m_samplePoints;
+    
+    if (rowsInterval == 0) rowsInterval = 1;
+    if (colsInterval == 0) colsInterval = 1;
+    
     int sum = 0;
-    for(int i = 0; i < rows; i+=rowsInterval){
-        for(int j = 0; j < cols; j+=colsInterval){
-            cv::Vec3b pixel = frame.at<cv::Vec3b>(i,j);
-            sum += pixel[2];
+    int count = 0;
+    
+    for(int i = 0; i < rows; i += rowsInterval){
+        for(int j = 0; j < cols; j += colsInterval){
+            cv::Vec3b pixel = frame.at<cv::Vec3b>(i, j);
+            sum += pixel[2];  // 使用红色通道
+            count++;
         }
     }
-    return sum / (255 * 4);
+    
+    if (count == 0) return 0;
+    
+    return sum / (count * 255 / 100);  // 返回0-100的百分比值
 }
 
 
 AutoBrightness::AutoBrightness(QObject* parent): QObject(parent)
-    ,m_cap(0)
+    , m_cap(0)
+    , m_exposure(-6.0)           // 默认曝光值
+    , m_captureInterval(10000)   // 默认10秒间隔
+    , m_samplePoints(5)          // 默认5x5采样点
 {
     // 禁用自动曝光和自动增益
 
@@ -57,24 +70,18 @@ AutoBrightness* AutoBrightness::getInstance(){
 }
 
 void AutoBrightness::openCap(){
-    // m_cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0.25); // 0.25表示手动模式
-    // m_cap.set(cv::CAP_PROP_EXPOSURE, -7); // 设置曝光值，具体值需要根据摄像头型号调整
-    // m_cap.set(cv::CAP_PROP_GAIN, 0); // 设置增益值
-
-
-
-    // m_cap.set(cv::CAP_PROP_FRAME_WIDTH, 160);
-    // m_cap.set(cv::CAP_PROP_FRAME_HEIGHT, 120);
-    // m_cap.set(cv::CAP_PROP_FPS, 1);
-
-
-    m_cap.open(0,cv::CAP_DSHOW);
-    // qDebug()<<"CAP_PROP_EXPOSURE:"<<m_cap.get(cv::CAP_PROP_EXPOSURE);
-    // qDebug()<<"CAP_PROP_FPS:"<<m_cap.get(cv::CAP_PROP_FPS);
-    // qDebug()<<"CAP_PROP_FRAME_WIDTH:"<<m_cap.get(cv::CAP_PROP_FRAME_WIDTH);
-    // qDebug()<<"CAP_PROP_FRAME_HEIGHT:"<<m_cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-    do{QThread::msleep(2000);}
-    while (!m_cap.isOpened());
+    m_cap.open(0, cv::CAP_DSHOW);
+    
+    // 等待摄像头打开
+    do {
+        QThread::msleep(2000);
+    } while (!m_cap.isOpened());
+    
+    // 设置摄像头参数
+    m_cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0.25); // 0.25表示手动模式
+    m_cap.set(cv::CAP_PROP_EXPOSURE, m_exposure); // 设置曝光值
+    
+    qDebug() << "Camera opened with exposure:" << m_exposure;
 }
 
 void AutoBrightness::releaseCap(){
@@ -95,6 +102,27 @@ void AutoBrightness::update(){
 
 void AutoBrightness::setCamera(){
     m_cap.set(cv::CAP_PROP_SETTINGS, 1);
+}
+
+void AutoBrightness::setExposure(double exposure) {
+    m_exposure = exposure;
+    if (m_cap.isOpened()) {
+        m_cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0.25); // 手动模式
+        m_cap.set(cv::CAP_PROP_EXPOSURE, m_exposure);
+        qDebug() << "Exposure updated to:" << m_exposure;
+    }
+}
+
+void AutoBrightness::setCaptureInterval(int intervalMs) {
+    m_captureInterval = intervalMs;
+    qDebug() << "Capture interval updated to:" << m_captureInterval << "ms";
+}
+
+void AutoBrightness::setSamplePoints(int points) {
+    if (points >= 2 && points <= 20) {
+        m_samplePoints = points;
+        qDebug() << "Sample points updated to:" << m_samplePoints << "x" << m_samplePoints;
+    }
 }
 
 #include "moc_AutoBrightness.cpp"

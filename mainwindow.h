@@ -22,6 +22,12 @@ private slots:
     void on_pushButton_clicked();
 
     void on_pushButton_2_clicked();
+    
+    void on_exposureSlider_valueChanged(int value);
+    
+    void on_intervalSlider_valueChanged(int value);
+    
+    void on_samplePointsSlider_valueChanged(int value);
 
 private:
     Ui::MainWindow *ui;
