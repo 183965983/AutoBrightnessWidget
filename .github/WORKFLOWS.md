@@ -74,10 +74,13 @@ Traditional CI workflows often test in the build environment where all developme
 - **Purpose**: **Validate packaged application in pristine environment**
 - **Environment**: Windows Server 2022 (clean environment)
 - **Inputs**: release-package
+- **Outputs**: app-screenshot (PNG image)
 - **Critical features**: 
   - ✅ Does NOT install development tools (Qt SDK, OpenCV SDK, CMake)
   - ✅ Only installs runtime dependencies (VC++ Runtime)
   - ✅ Simulates real user environment
+  - ✅ Captures application screenshot for visual verification
+  - ✅ Posts screenshot info as PR comment (on pull requests)
 - **Key steps**:
   - Download packaged zip file
   - Extract and verify package structure
@@ -85,6 +88,9 @@ Traditional CI workflows often test in the build environment where all developme
   - Install Visual C++ Runtime
   - Run application smoke test
   - Verify application launches successfully
+  - **Capture screenshot of running application**
+  - **Upload screenshot as artifact**
+  - **Comment on PR with screenshot download link (PR only)**
 
 **4. test-unit** (depends on: build, parallel with package)
 - **Purpose**: Run unit tests
@@ -105,6 +111,10 @@ Traditional CI workflows often test in the build environment where all developme
 **Artifacts:**
 - `build-artifacts`: Executables and DLLs (retention: 7 days)
 - `release-package`: Complete packaged application (retention: 7 days)
+- `app-screenshot`: Screenshot of running application UI (retention: 7 days)
+  - Captured during test job
+  - Available for download from workflow run
+  - Automatically linked in PR comments
 
 ### 2. Release Workflow (`.github/workflows/release.yml`)
 
@@ -218,6 +228,7 @@ build
       ├─> package
       │   └─> release-package (*.zip)
       │       └─> test
+      │           ├─> app-screenshot (*.png) [NEW]
       │           └─> release (release.yml only)
       └─> test-unit
 ```
@@ -362,6 +373,163 @@ Add status badges to your README:
 - [ ] Implement automatic version management
 - [ ] Add more integration test scenarios
 - [ ] Cache build dependencies for faster builds
+
+## Screenshot Feature
+
+### Overview
+
+The test job automatically captures a screenshot of the running application to provide visual verification of the UI. This feature helps reviewers quickly verify that the application launches correctly and displays the expected interface.
+
+### How It Works
+
+1. **Capture**: After the application launches successfully (with a 5-second initialization delay), the test script:
+   - Waits an additional 2 seconds for the window to fully render
+   - Uses .NET libraries (System.Windows.Forms and System.Drawing) to capture the entire primary screen
+   - Saves the screenshot as `screenshots/app-screenshot.png`
+
+2. **Upload to Image Hosting**: The screenshot is automatically uploaded to Imgur (free image hosting service):
+   - Converts image to base64 format
+   - Uses Imgur's anonymous upload API
+   - Returns a publicly accessible URL
+
+3. **Upload as Artifact**: The screenshot is also uploaded as a GitHub Actions artifact named `app-screenshot` with a 7-day retention period (backup option).
+
+4. **PR Comment**: When the workflow is triggered by a pull request:
+   - A comment is automatically posted to the PR
+   - **The screenshot is embedded directly in the comment** (when Imgur upload succeeds)
+   - Falls back to artifact download link if upload fails
+   - Includes a link to the workflow run for full details
+
+### Implementation Details
+
+**PowerShell Screenshot Code:**
+```powershell
+# Load .NET assemblies
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+# Capture screen
+$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+$graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+
+# Save and cleanup
+$bitmap.Save("screenshots/app-screenshot.png", [System.Drawing.Imaging.ImageFormat]::Png)
+$graphics.Dispose()
+$bitmap.Dispose()
+```
+
+**GitHub Actions Configuration:**
+```yaml
+# Upload screenshot as artifact (backup)
+- name: Upload screenshot
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: app-screenshot
+    path: screenshots/app-screenshot.png
+    retention-days: 7
+
+# Upload to Imgur for embedding in PR comments
+- name: Upload screenshot to Imgur
+  if: github.event_name == 'pull_request'
+  id: imgur_step
+  continue-on-error: true
+  run: |
+    # Convert to base64 and upload to Imgur
+    $bytes = [System.IO.File]::ReadAllBytes($screenshotPath)
+    $base64 = [System.Convert]::ToBase64String($bytes)
+    $headers = @{ "Authorization" = "Client-ID 546c25a59c58ad7" }
+    $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" ...
+  shell: pwsh
+
+# Post comment with embedded screenshot
+- name: Comment screenshot on PR
+  if: github.event_name == 'pull_request'
+  uses: actions/github-script@v7
+  with:
+    script: |
+      // Embed screenshot if Imgur upload succeeded
+      if (imgurSuccess && imgurUrl) {
+        comment = `![Screenshot](${imgurUrl})`;
+      }
+```
+
+### Required Permissions
+
+The test job requires `pull-requests: write` permission to post comments on PRs:
+
+```yaml
+test:
+  permissions:
+    contents: read
+    actions: read
+    pull-requests: write
+```
+
+### Viewing Screenshots
+
+**For Pull Requests:**
+- **The screenshot is displayed directly in the PR comment** 🎉
+- No need to download - just scroll through the PR comments
+- If Imgur upload fails, a download link to the artifact is provided as fallback
+
+**For Direct Branch Pushes:**
+- Go to the Actions tab
+- Select the workflow run
+- Download the `app-screenshot` artifact from the Artifacts section
+
+### PR Comment Example
+
+When the workflow runs on a PR, you'll see a comment like this:
+
+```markdown
+## 🖼️ Application Screenshot
+
+✅ Application launched successfully!
+
+![Screenshot](https://i.imgur.com/xxxxx.png)
+
+**Test Run:** [Workflow #12345](workflow-url)
+
+---
+*Screenshot captured during automated testing*
+```
+
+The screenshot is embedded inline, making it easy to visually verify the UI without downloading files.
+
+### Benefits
+
+- **Visual Verification**: Screenshot is **embedded directly in PR comments** for instant viewing
+- **No Download Required**: Review UI changes without leaving the PR page
+- **Regression Detection**: Compare screenshots across commits to spot UI changes
+- **Documentation**: Screenshots serve as visual documentation of the application state
+- **Debugging**: Helps diagnose UI issues in CI environment
+- **Reliable**: Falls back to artifact download if image hosting fails
+
+### Technical Details
+
+**Image Hosting:**
+- Uses Imgur's free anonymous upload API
+- No account or authentication required
+- Images are publicly accessible via direct links
+- Perfect for embedding in GitHub comments
+- Note: In production, consider storing the Client-ID as a GitHub secret
+
+**Fallback Mechanism:**
+- If Imgur upload fails (`continue-on-error: true`), the workflow continues
+- PR comment will include an artifact download link instead
+- Ensures screenshots are always available in some form
+
+### Limitations
+
+- Screenshot captures the entire primary screen, not just the application window
+- Only available on Windows runners (uses Windows-specific .NET APIs)
+- Requires GUI application to be visible on screen
+- May capture background applications if they overlap
+- **Imgur uploads are public** - anyone with the link can view the screenshot
+- Imgur has rate limits for anonymous uploads (though generous for typical usage)
 
 ## Related Documentation
 

@@ -237,6 +237,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: write
     
     steps:
     - name: Download package
@@ -305,7 +306,7 @@ jobs:
         $process = Start-Process -FilePath "test-env/AutoBrightnessWidget.exe" -PassThru -NoNewWindow
         
         # Wait a bit for the app to initialize
-        Start-Sleep -Seconds 3
+        Start-Sleep -Seconds 5
         
         # Check if process is running
         if ($process.HasExited) {
@@ -315,6 +316,35 @@ jobs:
         
         Write-Host "✓ Application launched successfully"
         
+        # Take screenshot of the application window
+        Write-Host "Taking screenshot of application window..."
+        
+        # Create screenshots directory
+        New-Item -ItemType Directory -Force -Path screenshots | Out-Null
+        
+        # Load necessary .NET assemblies for screenshot
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        
+        # Wait a moment to ensure window is fully rendered
+        Start-Sleep -Seconds 2
+        
+        # Capture screenshot
+        $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+        
+        # Save screenshot
+        $screenshotPath = "screenshots/app-screenshot.png"
+        $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        
+        # Cleanup
+        $graphics.Dispose()
+        $bitmap.Dispose()
+        
+        Write-Host "✓ Screenshot saved to $screenshotPath"
+        
         # Gracefully terminate the process
         $process.Kill()
         $process.WaitForExit(5000)
@@ -322,6 +352,74 @@ jobs:
         Write-Host "✓ Smoke test passed - package is valid"
       shell: pwsh
       timeout-minutes: 5
+    
+    - name: Upload screenshot
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-screenshot
+        path: screenshots/app-screenshot.png
+        if-no-files-found: warn
+        retention-days: 7
+    
+    - name: Upload screenshot to Imgur
+      if: github.event_name == 'pull_request'
+      id: imgur_step
+      continue-on-error: true
+      run: |
+        $screenshotPath = "screenshots/app-screenshot.png"
+        if (-not (Test-Path $screenshotPath)) {
+            Write-Host "Screenshot not found"
+            echo "IMGUR_SUCCESS=false" >> $env:GITHUB_ENV
+            exit 0
+        }
+        
+        $bytes = [System.IO.File]::ReadAllBytes($screenshotPath)
+        $base64 = [System.Convert]::ToBase64String($bytes)
+        
+        $headers = @{ "Authorization" = "Client-ID 546c25a59c58ad7" }
+        $body = @{ image = $base64; type = "base64" } | ConvertTo-Json
+        
+        try {
+            $response = Invoke-RestMethod -Uri "https://api.imgur.com/3/image" -Method Post -Headers $headers -Body $body -ContentType "application/json"
+            if ($response.success) {
+                $url = $response.data.link
+                Write-Host "Uploaded to $url"
+                echo "IMGUR_URL=$url" >> $env:GITHUB_ENV
+                echo "IMGUR_SUCCESS=true" >> $env:GITHUB_ENV
+            }
+        } catch {
+            Write-Host "Upload failed - $($_.Exception.Message)"
+            echo "IMGUR_SUCCESS=false" >> $env:GITHUB_ENV
+        }
+      shell: pwsh
+    
+    - name: Comment screenshot on PR
+      if: github.event_name == 'pull_request'
+      env:
+        IMGUR_URL: ${{ env.IMGUR_URL }}
+        IMGUR_SUCCESS: ${{ env.IMGUR_SUCCESS }}
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const workflowRunId = context.runId;
+          const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${workflowRunId}`;
+          const imgurSuccess = process.env.IMGUR_SUCCESS === 'true';
+          const imgurUrl = process.env.IMGUR_URL;
+          
+          let comment;
+          if (imgurSuccess && imgurUrl) {
+            comment = `## 🖼️ Application Screenshot\n\n✅ Application launched successfully!\n\n![Screenshot](${imgurUrl})\n\n**Test Run:** [Workflow #${workflowRunId}](${workflowUrl})\n\n---\n*Screenshot captured during automated testing*`;
+          } else {
+            comment = `## 🖼️ Application Screenshot\n\n✅ Application launched successfully!\n\n📥 [Download screenshot from workflow run](${workflowUrl})\n\n---\n*Screenshot captured during automated testing*`;
+          }
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: comment
+          });
   
   test-unit:
     needs: build
