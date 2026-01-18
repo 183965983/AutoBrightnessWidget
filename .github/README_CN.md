@@ -58,6 +58,22 @@
 - **编译器**: Visual Studio 2022
 - **架构**: x64
 
+## 下载构建产物
+
+### 最新稳定版本
+
+从 [GitHub Releases](https://github.com/183965983/AutoBrightnessWidget/releases/latest) 下载最新的稳定版本。
+
+### 最新开发构建版本
+
+如需下载包含最新功能的开发构建版本，请从 [Build 工作流](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml) 下载构建产物：
+1. 访问 [Build 工作流页面](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml)
+2. 点击最新的成功运行记录
+3. 向下滚动到 "Artifacts" 部分
+4. 下载 `release-package` 产物（Windows x64 ZIP 文件）
+
+**注意：** 开发构建版本由最新代码自动生成，可能包含实验性功能。
+
 ## 使用方法
 
 ### 自动构建

@@ -5,6 +5,22 @@
 
 A Qt-based desktop application for automatic screen brightness adjustment using camera input and OpenCV.
 
+## Download
+
+### Latest Stable Release
+
+Download the latest stable version from [GitHub Releases](https://github.com/183965983/AutoBrightnessWidget/releases/latest).
+
+### Latest Development Build
+
+For the latest development build with cutting-edge features, download artifacts from the [Build workflow](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml):
+1. Go to the [Build workflow page](https://github.com/183965983/AutoBrightnessWidget/actions/workflows/build.yml)
+2. Click on the latest successful workflow run
+3. Scroll down to the "Artifacts" section
+4. Download the `release-package` artifact (Windows x64 ZIP file)
+
+**Note:** Development builds are automatically generated from the latest code changes and may contain experimental features.
+
 ## Features
 
 - Automatic brightness adjustment based on ambient light detection
