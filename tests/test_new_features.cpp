@@ -185,6 +185,19 @@ private slots:
         qDebug() << "Brightness validation works correctly";
     }
 
+    void test_curve_editor_widget() {
+        // Test curve editor widget functionality (UI-free tests)
+        MainWindow window;
+        window.show();
+        
+        // Verify edit curve button exists
+        QPushButton* editCurveButton = window.findChild<QPushButton*>("editCurveButton");
+        QVERIFY(editCurveButton != nullptr);
+        
+        window.hide();
+        qDebug() << "Curve editor button exists";
+    }
+
     void cleanupTestCase() {
         qDebug() << "New features test cleanup complete";
     }

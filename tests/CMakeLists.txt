@@ -15,6 +15,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${TEST_SOURCES}
         ../AutoBrightness.cpp
         ../AutoBrightness.h
+        ../CurveEditorWidget.cpp
+        ../CurveEditorWidget.h
+        ../CurveEditorDialog.cpp
+        ../CurveEditorDialog.h
         ../mainwindow.cpp
         ../mainwindow.h
         ../mainwindow.ui
@@ -24,6 +28,10 @@ else()
         ${TEST_SOURCES}
         ../AutoBrightness.cpp
         ../AutoBrightness.h
+        ../CurveEditorWidget.cpp
+        ../CurveEditorWidget.h
+        ../CurveEditorDialog.cpp
+        ../CurveEditorDialog.h
         ../mainwindow.cpp
         ../mainwindow.h
     )

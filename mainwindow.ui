@@ -363,7 +363,14 @@
        <item>
         <widget class="QCheckBox" name="useCurveCheckBox">
          <property name="text">
-          <string>使用曲线调整 (曲线功能暂未实现)</string>
+          <string>使用曲线调整</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="editCurveButton">
+         <property name="text">
+          <string>编辑曲线...</string>
          </property>
         </widget>
        </item>

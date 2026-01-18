@@ -37,6 +37,7 @@ private slots:
     void on_useCurveCheckBox_toggled(bool checked);
     void on_autoStartCheckBox_toggled(bool checked);
     void on_minimizeToTrayCheckBox_toggled(bool checked);
+    void on_editCurveButton_clicked();  // 新增：打开曲线编辑器
     
     // 亮度更新槽
     void updateCameraBrightness(int brightness);

@@ -6,6 +6,7 @@
 #include <QDir>
 #include <QCoreApplication>
 #include "AutoBrightness.h"
+#include "CurveEditorDialog.h"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -169,7 +170,27 @@ void MainWindow::on_useCurveCheckBox_toggled(bool checked)
 {
     m_autoBrightness->setUseCurve(checked);
     m_autoBrightness->saveSettings();
-    // TODO: 显示/隐藏曲线编辑界面
+}
+
+void MainWindow::on_editCurveButton_clicked()
+{
+    CurveEditorDialog dialog(this);
+    dialog.setCurvePoints(m_autoBrightness->getCurvePoints());
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        auto points = dialog.getCurvePoints();
+        m_autoBrightness->setCurvePoints(points);
+        m_autoBrightness->saveSettings();
+        
+        // 如果用户编辑了曲线，自动启用曲线模式
+        if (points.size() > 2) {
+            ui->useCurveCheckBox->setChecked(true);
+            m_autoBrightness->setUseCurve(true);
+        }
+        
+        QMessageBox::information(this, "曲线已保存", 
+            QString("曲线控制点数量: %1\n曲线映射已更新并保存").arg(points.size()));
+    }
 }
 
 void MainWindow::on_autoStartCheckBox_toggled(bool checked)
