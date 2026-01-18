@@ -201,11 +201,9 @@ void CurveEditorWidget::mouseMoveEvent(QMouseEvent *event)
         sortPoints();
         
         // 重新查找选中点的索引（排序后可能改变）
-        for (size_t i = 0; i < m_curvePoints.size(); ++i) {
-            if (m_curvePoints[i] == value) {
-                m_selectedPointIndex = static_cast<int>(i);
-                break;
-            }
+        auto it = std::find(m_curvePoints.begin(), m_curvePoints.end(), value);
+        if (it != m_curvePoints.end()) {
+            m_selectedPointIndex = static_cast<int>(std::distance(m_curvePoints.begin(), it));
         }
         
         update();
@@ -265,11 +263,10 @@ void CurveEditorWidget::addPoint(int x, int y)
     sortPoints();
     
     // 找到新添加点的索引并选中它
-    for (size_t i = 0; i < m_curvePoints.size(); ++i) {
-        if (m_curvePoints[i].first == x && m_curvePoints[i].second == y) {
-            m_selectedPointIndex = static_cast<int>(i);
-            break;
-        }
+    auto point = std::make_pair(x, y);
+    auto it = std::find(m_curvePoints.begin(), m_curvePoints.end(), point);
+    if (it != m_curvePoints.end()) {
+        m_selectedPointIndex = static_cast<int>(std::distance(m_curvePoints.begin(), it));
     }
     
     emit curveChanged();

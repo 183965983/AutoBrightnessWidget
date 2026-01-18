@@ -259,8 +259,17 @@ void MainWindow::setupSystemTray()
 
 QIcon MainWindow::createTrayIcon()
 {
-    // 创建 16x16 的图标
-    QPixmap pixmap(16, 16);
+    // 图标尺寸和几何常量
+    constexpr int ICON_SIZE = 16;
+    constexpr int CENTER = ICON_SIZE / 2;
+    constexpr int NUM_RAYS = 8;
+    constexpr double ANGLE_STEP = 360.0 / NUM_RAYS;  // 45度间隔
+    constexpr double INNER_RADIUS = 5.0;
+    constexpr double OUTER_RADIUS = 7.0;
+    constexpr int CORE_RADIUS = 4;
+    
+    // 创建图标
+    QPixmap pixmap(ICON_SIZE, ICON_SIZE);
     pixmap.fill(Qt::transparent);
     
     QPainter painter(&pixmap);
@@ -269,19 +278,19 @@ QIcon MainWindow::createTrayIcon()
     // 绘制太阳图标（代表亮度）
     // 外圈光芒
     painter.setPen(QPen(QColor(255, 200, 0), 1));
-    for (int i = 0; i < 8; ++i) {
-        double angle = i * 45.0 * M_PI / 180.0;
-        int x1 = 8 + static_cast<int>(5.0 * std::cos(angle));
-        int y1 = 8 + static_cast<int>(5.0 * std::sin(angle));
-        int x2 = 8 + static_cast<int>(7.0 * std::cos(angle));
-        int y2 = 8 + static_cast<int>(7.0 * std::sin(angle));
+    for (int i = 0; i < NUM_RAYS; ++i) {
+        double angle = i * ANGLE_STEP * M_PI / 180.0;
+        int x1 = CENTER + static_cast<int>(INNER_RADIUS * std::cos(angle));
+        int y1 = CENTER + static_cast<int>(INNER_RADIUS * std::sin(angle));
+        int x2 = CENTER + static_cast<int>(OUTER_RADIUS * std::cos(angle));
+        int y2 = CENTER + static_cast<int>(OUTER_RADIUS * std::sin(angle));
         painter.drawLine(x1, y1, x2, y2);
     }
     
     // 中心圆（太阳核心）
     painter.setPen(QPen(QColor(255, 180, 0), 1));
     painter.setBrush(QBrush(QColor(255, 220, 0)));
-    painter.drawEllipse(QPoint(8, 8), 4, 4);
+    painter.drawEllipse(QPoint(CENTER, CENTER), CORE_RADIUS, CORE_RADIUS);
     
     return QIcon(pixmap);
 }
