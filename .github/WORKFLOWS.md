@@ -74,10 +74,13 @@ Traditional CI workflows often test in the build environment where all developme
 - **Purpose**: **Validate packaged application in pristine environment**
 - **Environment**: Windows Server 2022 (clean environment)
 - **Inputs**: release-package
+- **Outputs**: app-screenshot (PNG image)
 - **Critical features**: 
   - ✅ Does NOT install development tools (Qt SDK, OpenCV SDK, CMake)
   - ✅ Only installs runtime dependencies (VC++ Runtime)
   - ✅ Simulates real user environment
+  - ✅ Captures application screenshot for visual verification
+  - ✅ Posts screenshot info as PR comment (on pull requests)
 - **Key steps**:
   - Download packaged zip file
   - Extract and verify package structure
@@ -85,6 +88,9 @@ Traditional CI workflows often test in the build environment where all developme
   - Install Visual C++ Runtime
   - Run application smoke test
   - Verify application launches successfully
+  - **Capture screenshot of running application**
+  - **Upload screenshot as artifact**
+  - **Comment on PR with screenshot download link (PR only)**
 
 **4. test-unit** (depends on: build, parallel with package)
 - **Purpose**: Run unit tests
@@ -105,6 +111,10 @@ Traditional CI workflows often test in the build environment where all developme
 **Artifacts:**
 - `build-artifacts`: Executables and DLLs (retention: 7 days)
 - `release-package`: Complete packaged application (retention: 7 days)
+- `app-screenshot`: Screenshot of running application UI (retention: 7 days)
+  - Captured during test job
+  - Available for download from workflow run
+  - Automatically linked in PR comments
 
 ### 2. Release Workflow (`.github/workflows/release.yml`)
 
@@ -218,6 +228,7 @@ build
       ├─> package
       │   └─> release-package (*.zip)
       │       └─> test
+      │           ├─> app-screenshot (*.png) [NEW]
       │           └─> release (release.yml only)
       └─> test-unit
 ```
@@ -362,6 +373,103 @@ Add status badges to your README:
 - [ ] Implement automatic version management
 - [ ] Add more integration test scenarios
 - [ ] Cache build dependencies for faster builds
+
+## Screenshot Feature
+
+### Overview
+
+The test job automatically captures a screenshot of the running application to provide visual verification of the UI. This feature helps reviewers quickly verify that the application launches correctly and displays the expected interface.
+
+### How It Works
+
+1. **Capture**: After the application launches successfully (with a 5-second initialization delay), the test script:
+   - Waits an additional 2 seconds for the window to fully render
+   - Uses .NET libraries (System.Windows.Forms and System.Drawing) to capture the entire primary screen
+   - Saves the screenshot as `screenshots/app-screenshot.png`
+
+2. **Upload**: The screenshot is uploaded as a GitHub Actions artifact named `app-screenshot` with a 7-day retention period.
+
+3. **PR Comment**: When the workflow is triggered by a pull request:
+   - A comment is automatically posted to the PR
+   - The comment includes a link to the workflow run
+   - Instructions for downloading the screenshot artifact are provided
+
+### Implementation Details
+
+**PowerShell Screenshot Code:**
+```powershell
+# Load .NET assemblies
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+# Capture screen
+$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+$bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+$graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+$graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+
+# Save and cleanup
+$bitmap.Save("screenshots/app-screenshot.png", [System.Drawing.Imaging.ImageFormat]::Png)
+$graphics.Dispose()
+$bitmap.Dispose()
+```
+
+**GitHub Actions Configuration:**
+```yaml
+- name: Upload screenshot
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: app-screenshot
+    path: screenshots/app-screenshot.png
+    if-no-files-found: warn
+    retention-days: 7
+
+- name: Comment screenshot on PR
+  if: github.event_name == 'pull_request'
+  uses: actions/github-script@v7
+  with:
+    script: |
+      # Posts comment with download link to PR
+```
+
+### Required Permissions
+
+The test job requires `pull-requests: write` permission to post comments on PRs:
+
+```yaml
+test:
+  permissions:
+    contents: read
+    actions: read
+    pull-requests: write
+```
+
+### Viewing Screenshots
+
+**For Pull Requests:**
+- The screenshot info is automatically posted as a comment
+- Click the workflow run link in the comment
+- Download the `app-screenshot` artifact
+
+**For Direct Branch Pushes:**
+- Go to the Actions tab
+- Select the workflow run
+- Download the `app-screenshot` artifact from the Artifacts section
+
+### Benefits
+
+- **Visual Verification**: Quickly verify UI renders correctly
+- **Regression Detection**: Compare screenshots across commits to spot UI changes
+- **Documentation**: Screenshots serve as visual documentation of the application state
+- **Debugging**: Helps diagnose UI issues in CI environment
+
+### Limitations
+
+- Screenshot captures the entire primary screen, not just the application window
+- Only available on Windows runners (uses Windows-specific .NET APIs)
+- Requires GUI application to be visible on screen
+- May capture background applications if they overlap
 
 ## Related Documentation
 
