@@ -52,6 +52,7 @@ private:
     void setupSystemTray();
     void setAutoStart(bool enable);
     bool isAutoStartEnabled();
+    QIcon createTrayIcon();
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;

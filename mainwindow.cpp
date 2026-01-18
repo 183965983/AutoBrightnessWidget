@@ -5,6 +5,10 @@
 #include <QSettings>
 #include <QDir>
 #include <QCoreApplication>
+#include <QPixmap>
+#include <QPainter>
+#include <QIcon>
+#include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
 
@@ -237,8 +241,8 @@ void MainWindow::setupSystemTray()
 {
     m_trayIcon = new QSystemTrayIcon(this);
     
-    // 设置图标 - 使用默认应用图标
-    m_trayIcon->setIcon(windowIcon());
+    // 设置自定义图标
+    m_trayIcon->setIcon(createTrayIcon());
     
     // 创建托盘菜单
     m_trayMenu = new QMenu(this);
@@ -251,6 +255,35 @@ void MainWindow::setupSystemTray()
     
     m_trayIcon->setContextMenu(m_trayMenu);
     m_trayIcon->show();
+}
+
+QIcon MainWindow::createTrayIcon()
+{
+    // 创建 16x16 的图标
+    QPixmap pixmap(16, 16);
+    pixmap.fill(Qt::transparent);
+    
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing);
+    
+    // 绘制太阳图标（代表亮度）
+    // 外圈光芒
+    painter.setPen(QPen(QColor(255, 200, 0), 1));
+    for (int i = 0; i < 8; ++i) {
+        double angle = i * 45.0 * M_PI / 180.0;
+        int x1 = 8 + static_cast<int>(5.0 * std::cos(angle));
+        int y1 = 8 + static_cast<int>(5.0 * std::sin(angle));
+        int x2 = 8 + static_cast<int>(7.0 * std::cos(angle));
+        int y2 = 8 + static_cast<int>(7.0 * std::sin(angle));
+        painter.drawLine(x1, y1, x2, y2);
+    }
+    
+    // 中心圆（太阳核心）
+    painter.setPen(QPen(QColor(255, 180, 0), 1));
+    painter.setBrush(QBrush(QColor(255, 220, 0)));
+    painter.drawEllipse(QPoint(8, 8), 4, 4);
+    
+    return QIcon(pixmap);
 }
 
 void MainWindow::onTrayIconActivated(QSystemTrayIcon::ActivationReason reason)
