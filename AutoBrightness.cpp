@@ -2,6 +2,7 @@
 #include "AutoBrightness.h"
 #include <QString>
 #include <QProcess>
+#include <algorithm>
 
 
 void AutoBrightness::setBrightness(int brightness) {
