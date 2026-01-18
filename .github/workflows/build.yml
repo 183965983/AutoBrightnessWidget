@@ -237,6 +237,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      pull-requests: write
     
     steps:
     - name: Download package
@@ -305,7 +306,7 @@ jobs:
         $process = Start-Process -FilePath "test-env/AutoBrightnessWidget.exe" -PassThru -NoNewWindow
         
         # Wait a bit for the app to initialize
-        Start-Sleep -Seconds 3
+        Start-Sleep -Seconds 5
         
         # Check if process is running
         if ($process.HasExited) {
@@ -315,6 +316,35 @@ jobs:
         
         Write-Host "✓ Application launched successfully"
         
+        # Take screenshot of the application window
+        Write-Host "Taking screenshot of application window..."
+        
+        # Create screenshots directory
+        New-Item -ItemType Directory -Force -Path screenshots | Out-Null
+        
+        # Load necessary .NET assemblies for screenshot
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -AssemblyName System.Drawing
+        
+        # Wait a moment to ensure window is fully rendered
+        Start-Sleep -Seconds 2
+        
+        # Capture screenshot
+        $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+        $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+        $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+        
+        # Save screenshot
+        $screenshotPath = "screenshots/app-screenshot.png"
+        $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        
+        # Cleanup
+        $graphics.Dispose()
+        $bitmap.Dispose()
+        
+        Write-Host "✓ Screenshot saved to $screenshotPath"
+        
         # Gracefully terminate the process
         $process.Kill()
         $process.WaitForExit(5000)
@@ -322,6 +352,57 @@ jobs:
         Write-Host "✓ Smoke test passed - package is valid"
       shell: pwsh
       timeout-minutes: 5
+    
+    - name: Upload screenshot
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-screenshot
+        path: screenshots/app-screenshot.png
+        if-no-files-found: warn
+        retention-days: 7
+    
+    - name: Comment screenshot on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const path = require('path');
+          
+          // Get the screenshot path
+          const screenshotPath = 'screenshots/app-screenshot.png';
+          
+          // Check if screenshot exists
+          if (!fs.existsSync(screenshotPath)) {
+            console.log('Screenshot not found, skipping PR comment');
+            return;
+          }
+          
+          // Get artifact upload info
+          const artifactName = 'app-screenshot';
+          const workflowRunId = context.runId;
+          const repo = context.repo;
+          
+          // Create comment with screenshot info
+          const comment = `## 🖼️ Application Screenshot
+          
+          The application has been successfully tested and a screenshot has been captured.
+          
+          **Test Run:** [#${workflowRunId}](${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${workflowRunId})
+          
+          You can download the screenshot artifact from the workflow run to view the application interface.
+          
+          ---
+          *Screenshot captured during automated testing*`;
+          
+          // Post comment to PR
+          await github.rest.issues.createComment({
+            owner: repo.owner,
+            repo: repo.repo,
+            issue_number: context.issue.number,
+            body: comment
+          });
   
   test-unit:
     needs: build
