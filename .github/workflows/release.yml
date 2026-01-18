@@ -7,10 +7,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
-    runs-on: windows-2022  # Windows 11
+  build:
+    runs-on: windows-latest
     permissions:
-      contents: write  # Required for creating releases
+      contents: read
       actions: read
     
     steps:
@@ -29,7 +29,6 @@ jobs:
     
     - name: Install OpenCV
       run: |
-        # Download and extract OpenCV
         $opencvVersion = "4.10.0"
         $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
         $opencvInstaller = "opencv-installer.exe"
@@ -38,29 +37,24 @@ jobs:
         Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
         
         Write-Host "Extracting OpenCV..."
-        # Use 7zip to extract the self-extracting archive
         Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
         
-        # Validate extraction
         if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
             Write-Error "OpenCV extraction failed"
             exit 1
         }
         
-        # Move extracted content to opencv directory
         if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
             Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
         } else {
             Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
         }
         
-        # Verify OpenCV build directory exists
         if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
             Write-Error "OpenCV build directory not found after extraction"
             exit 1
         }
         
-        # Set OpenCV path
         echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
         echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
       shell: pwsh
@@ -69,7 +63,7 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR"
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR" -DBUILD_TESTS=ON
       shell: pwsh
     
     - name: Build
@@ -78,37 +72,130 @@ jobs:
         cmake --build . --config Release
       shell: pwsh
     
+    - name: Prepare artifacts
+      run: |
+        mkdir artifacts
+        Copy-Item build/Release/*.exe artifacts/ -ErrorAction SilentlyContinue
+        Copy-Item build/Release/*.dll artifacts/ -ErrorAction SilentlyContinue
+        
+        if (-not (Test-Path "artifacts/AutoBrightnessWidget.exe")) {
+            Write-Error "Main executable not found"
+            exit 1
+        }
+        
+        Write-Host "Build artifacts prepared successfully"
+      shell: pwsh
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: artifacts/*
+        if-no-files-found: error
+        retention-days: 90
+  
+  package:
+    needs: build
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: build-artifacts
+        path: build-artifacts
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    
+    - name: Install OpenCV
+      run: |
+        $opencvVersion = "4.10.0"
+        $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
+        $opencvInstaller = "opencv-installer.exe"
+        
+        Write-Host "Downloading OpenCV ${opencvVersion}..."
+        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
+        
+        Write-Host "Extracting OpenCV..."
+        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
+            Write-Error "OpenCV extraction failed"
+            exit 1
+        }
+        
+        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
+        } else {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
+            Write-Error "OpenCV build directory not found after extraction"
+            exit 1
+        }
+        
+        echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
+        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
+      shell: pwsh
+    
     - name: Package application
       run: |
         mkdir release-package
         
-        # Copy executable
-        if (-not (Test-Path "build/Release/AutoBrightnessWidget.exe")) {
-            Write-Error "Application executable not found"
+        if (-not (Test-Path "build-artifacts/AutoBrightnessWidget.exe")) {
+            Write-Error "Application executable not found in build artifacts"
             exit 1
         }
-        Copy-Item build/Release/AutoBrightnessWidget.exe release-package/
+        Copy-Item build-artifacts/*.exe release-package/
+        Copy-Item build-artifacts/*.dll release-package/ -ErrorAction SilentlyContinue
         
-        # Deploy Qt dependencies (Qt install action sets Qt6_DIR)
-        $qtPath = Split-Path (Split-Path $env:Qt6_DIR)
-        $windeployqt = Join-Path $qtPath "bin\windeployqt.exe"
+        # Deploy Qt dependencies
+        $windeployqt = Join-Path $env:Qt6_DIR "bin\windeployqt.exe"
         if (-not (Test-Path $windeployqt)) {
-            Write-Error "windeployqt not found at $windeployqt - Qt dependencies cannot be packaged"
+            Write-Error "windeployqt not found at $windeployqt"
             exit 1
         }
         Write-Host "Running windeployqt..."
-        & $windeployqt release-package/AutoBrightnessWidget.exe --release --no-compiler-runtime
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "windeployqt failed with exit code $LASTEXITCODE"
+        Push-Location release-package
+        & $windeployqt AutoBrightnessWidget.exe --release --no-compiler-runtime --no-translations
+        $deployResult = $LASTEXITCODE
+        Pop-Location
+        if ($deployResult -ne 0) {
+            Write-Error "windeployqt failed with exit code $deployResult"
             exit 1
         }
         
         # Copy OpenCV DLLs
-        $opencvBinPath = "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin"
+        $opencvX64Path = "$env:GITHUB_WORKSPACE\opencv\build\x64"
+        if (-not (Test-Path $opencvX64Path)) {
+            Write-Error "OpenCV x64 directory not found at $opencvX64Path"
+            exit 1
+        }
+        
+        $vcDirs = Get-ChildItem -Path $opencvX64Path -Directory | Where-Object { $_.Name -match "^vc\d+$" }
+        if ($vcDirs.Count -eq 0) {
+            Write-Error "No VC directory found in $opencvX64Path"
+            exit 1
+        }
+        
+        $vcDir = $vcDirs[0]
+        $opencvBinPath = Join-Path $vcDir.FullName "bin"
+        Write-Host "Using OpenCV bin path: $opencvBinPath"
+        
         if (-not (Test-Path $opencvBinPath)) {
             Write-Error "OpenCV bin directory not found at $opencvBinPath"
             exit 1
         }
+        
         $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
         if ($opencvDlls.Count -eq 0) {
             Write-Error "No OpenCV DLLs found in $opencvBinPath"
@@ -122,12 +209,118 @@ jobs:
         Compress-Archive -Path release-package\* -DestinationPath AutoBrightnessWidget-Windows-x64.zip
         
         Write-Host "Package created successfully"
+        
+        Write-Host "`nPackage contents:"
+        Get-ChildItem release-package | Format-Table Name, Length
       shell: pwsh
+    
+    - name: Upload package
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-package
+        path: AutoBrightnessWidget-Windows-x64.zip
+        if-no-files-found: error
+        retention-days: 90
+  
+  test:
+    needs: package
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Download package
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: release-package
+        path: package
+    
+    - name: Extract and verify package
+      run: |
+        Write-Host "Extracting package..."
+        Expand-Archive -Path package/AutoBrightnessWidget-Windows-x64.zip -DestinationPath test-env
+        
+        Write-Host "`nPackage contents:"
+        Get-ChildItem test-env -Recurse | Format-Table FullName, Length
+        
+        if (-not (Test-Path "test-env/AutoBrightnessWidget.exe")) {
+            Write-Error "Main executable not found in package"
+            exit 1
+        }
+        
+        $qtDlls = @("Qt6Core.dll", "Qt6Gui.dll", "Qt6Widgets.dll")
+        foreach ($dll in $qtDlls) {
+            if (-not (Test-Path "test-env/$dll")) {
+                Write-Warning "Qt dependency $dll not found in package"
+            } else {
+                Write-Host "✓ Found $dll"
+            }
+        }
+        
+        $opencvDll = Get-ChildItem "test-env/opencv_world*.dll" -ErrorAction SilentlyContinue
+        if ($opencvDll) {
+            Write-Host "✓ Found OpenCV DLL: $($opencvDll.Name)"
+        } else {
+            Write-Error "OpenCV DLL not found in package"
+            exit 1
+        }
+        
+        Write-Host "`n✓ Package structure verified successfully"
+      shell: pwsh
+    
+    - name: Install Visual C++ Runtime
+      run: |
+        Write-Host "Installing Visual C++ Redistributable..."
+        $vcRedistUrl = "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+        $vcRedistInstaller = "vc_redist.x64.exe"
+        
+        Invoke-WebRequest -Uri $vcRedistUrl -OutFile $vcRedistInstaller -UseBasicParsing
+        Start-Process -FilePath $vcRedistInstaller -ArgumentList "/install", "/quiet", "/norestart" -Wait -NoNewWindow
+        
+        Write-Host "VC++ Runtime installed"
+      shell: pwsh
+    
+    - name: Run application smoke test
+      run: |
+        Write-Host "Running application smoke test..."
+        
+        $process = Start-Process -FilePath "test-env/AutoBrightnessWidget.exe" -PassThru -NoNewWindow
+        
+        Start-Sleep -Seconds 3
+        
+        if ($process.HasExited) {
+            Write-Error "Application exited prematurely with code $($process.ExitCode)"
+            exit 1
+        }
+        
+        Write-Host "✓ Application launched successfully"
+        
+        $process.Kill()
+        $process.WaitForExit(5000)
+        
+        Write-Host "✓ Smoke test passed - package is valid and ready for release"
+      shell: pwsh
+      timeout-minutes: 5
+  
+  release:
+    needs: test
+    runs-on: windows-2022
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+    - name: Download package
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: release-package
+        path: release-files
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        files: AutoBrightnessWidget-Windows-x64.zip
+        files: release-files/AutoBrightnessWidget-Windows-x64.zip
         draft: false
         prerelease: false
         generate_release_notes: true
