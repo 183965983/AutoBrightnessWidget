@@ -141,15 +141,47 @@ void AutoBrightness::setSamplePoints(int points) {
 }
 
 void AutoBrightness::setMinBrightness(int cameraBrightness, int screenBrightness) {
-    m_minCameraBrightness = cameraBrightness;
-    m_minScreenBrightness = screenBrightness;
-    qDebug() << "Min brightness set: camera=" << cameraBrightness << ", screen=" << screenBrightness;
+    m_minCameraBrightness = std::max(0, std::min(100, cameraBrightness));
+    m_minScreenBrightness = std::max(0, std::min(100, screenBrightness));
+    qDebug() << "Min brightness set: camera=" << m_minCameraBrightness << ", screen=" << m_minScreenBrightness;
 }
 
 void AutoBrightness::setMaxBrightness(int cameraBrightness, int screenBrightness) {
-    m_maxCameraBrightness = cameraBrightness;
-    m_maxScreenBrightness = screenBrightness;
-    qDebug() << "Max brightness set: camera=" << cameraBrightness << ", screen=" << screenBrightness;
+    m_maxCameraBrightness = std::max(0, std::min(100, cameraBrightness));
+    m_maxScreenBrightness = std::max(0, std::min(100, screenBrightness));
+    qDebug() << "Max brightness set: camera=" << m_maxCameraBrightness << ", screen=" << m_maxScreenBrightness;
+}
+
+bool AutoBrightness::validateBrightnessConfiguration(QString* errorMessage) const {
+    if (m_minCameraBrightness >= m_maxCameraBrightness) {
+        if (errorMessage) {
+            *errorMessage = QString("摄像头最小亮度 (%1) 必须小于最大亮度 (%2)")
+                .arg(m_minCameraBrightness)
+                .arg(m_maxCameraBrightness);
+        }
+        return false;
+    }
+    
+    if (m_minScreenBrightness >= m_maxScreenBrightness) {
+        if (errorMessage) {
+            *errorMessage = QString("屏幕最小亮度 (%1) 必须小于最大亮度 (%2)")
+                .arg(m_minScreenBrightness)
+                .arg(m_maxScreenBrightness);
+        }
+        return false;
+    }
+    
+    // 检查范围是否过小（可能导致映射不准确）
+    if (m_maxCameraBrightness - m_minCameraBrightness < 10) {
+        if (errorMessage) {
+            *errorMessage = QString("摄像头亮度范围过小 (%1-%2)，建议至少相差10个单位以获得准确映射")
+                .arg(m_minCameraBrightness)
+                .arg(m_maxCameraBrightness);
+        }
+        return false;
+    }
+    
+    return true;
 }
 
 void AutoBrightness::setCurvePoints(const std::vector<std::pair<int, int>>& points) {

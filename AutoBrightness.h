@@ -41,6 +41,9 @@ public:
     int getMinScreenBrightness() const { return m_minScreenBrightness; }
     int getMaxScreenBrightness() const { return m_maxScreenBrightness; }
     
+    // 配置验证
+    bool validateBrightnessConfiguration(QString* errorMessage = nullptr) const;
+    
     // 曲线调整功能
     void setCurvePoints(const std::vector<std::pair<int, int>>& points);
     std::vector<std::pair<int, int>> getCurvePoints() const { return m_curvePoints; }

@@ -135,6 +135,56 @@ private slots:
         qDebug() << "Settings save/load works";
     }
 
+    void test_brightness_validation() {
+        // Test brightness configuration validation
+        AutoBrightness* ab = AutoBrightness::getInstance();
+        QString errorMessage;
+        
+        // Test valid configuration
+        ab->setMinBrightness(20, 10);
+        ab->setMaxBrightness(80, 90);
+        QVERIFY(ab->validateBrightnessConfiguration(&errorMessage));
+        
+        // Test invalid: min camera >= max camera
+        ab->setMinBrightness(80, 10);
+        ab->setMaxBrightness(80, 90);
+        QVERIFY(!ab->validateBrightnessConfiguration(&errorMessage));
+        QVERIFY(errorMessage.contains("摄像头"));
+        
+        // Test invalid: min screen >= max screen
+        ab->setMinBrightness(20, 90);
+        ab->setMaxBrightness(80, 90);
+        QVERIFY(!ab->validateBrightnessConfiguration(&errorMessage));
+        QVERIFY(errorMessage.contains("屏幕"));
+        
+        // Test invalid: range too small
+        ab->setMinBrightness(45, 10);
+        ab->setMaxBrightness(50, 90);
+        QVERIFY(!ab->validateBrightnessConfiguration(&errorMessage));
+        QVERIFY(errorMessage.contains("范围过小"));
+        
+        // Test edge case: exactly 10 units should fail (< 10)
+        ab->setMinBrightness(40, 10);
+        ab->setMaxBrightness(49, 90);
+        QVERIFY(!ab->validateBrightnessConfiguration(&errorMessage));
+        
+        // Test edge case: 10 units should pass
+        ab->setMinBrightness(40, 10);
+        ab->setMaxBrightness(50, 90);
+        QVERIFY(ab->validateBrightnessConfiguration(&errorMessage));
+        
+        // Test clamping: values outside 0-100 should be clamped
+        ab->setMinBrightness(-10, -20);
+        QCOMPARE(ab->getMinCameraBrightness(), 0);
+        QCOMPARE(ab->getMinScreenBrightness(), 0);
+        
+        ab->setMaxBrightness(120, 110);
+        QCOMPARE(ab->getMaxCameraBrightness(), 100);
+        QCOMPARE(ab->getMaxScreenBrightness(), 100);
+        
+        qDebug() << "Brightness validation works correctly";
+    }
+
     void cleanupTestCase() {
         qDebug() << "New features test cleanup complete";
     }

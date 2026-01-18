@@ -128,10 +128,20 @@ void MainWindow::on_setMinBrightnessButton_clicked()
     int cameraBrightness = m_autoBrightness->getCurrentCameraBrightness();
     int screenBrightness = ui->minScreenBrightnessSpinBox->value();
     m_autoBrightness->setMinBrightness(cameraBrightness, screenBrightness);
-    m_autoBrightness->saveSettings();
-    QMessageBox::information(this, "配置成功", 
-        QString("最小亮度已配置:\n摄像头亮度: %1\n屏幕亮度: %2")
-        .arg(cameraBrightness).arg(screenBrightness));
+    
+    // 验证配置
+    QString errorMessage;
+    if (!m_autoBrightness->validateBrightnessConfiguration(&errorMessage)) {
+        QMessageBox::warning(this, "配置警告", 
+            QString("最小亮度已配置，但当前配置可能无效:\n\n%1\n\n"
+                    "请配置有效的最大亮度以确保正确映射。")
+            .arg(errorMessage));
+    } else {
+        m_autoBrightness->saveSettings();
+        QMessageBox::information(this, "配置成功", 
+            QString("最小亮度已配置:\n摄像头亮度: %1\n屏幕亮度: %2")
+            .arg(cameraBrightness).arg(screenBrightness));
+    }
 }
 
 void MainWindow::on_setMaxBrightnessButton_clicked()
@@ -139,10 +149,20 @@ void MainWindow::on_setMaxBrightnessButton_clicked()
     int cameraBrightness = m_autoBrightness->getCurrentCameraBrightness();
     int screenBrightness = ui->maxScreenBrightnessSpinBox->value();
     m_autoBrightness->setMaxBrightness(cameraBrightness, screenBrightness);
-    m_autoBrightness->saveSettings();
-    QMessageBox::information(this, "配置成功", 
-        QString("最大亮度已配置:\n摄像头亮度: %1\n屏幕亮度: %2")
-        .arg(cameraBrightness).arg(screenBrightness));
+    
+    // 验证配置
+    QString errorMessage;
+    if (!m_autoBrightness->validateBrightnessConfiguration(&errorMessage)) {
+        QMessageBox::warning(this, "配置警告", 
+            QString("最大亮度已配置，但当前配置可能无效:\n\n%1\n\n"
+                    "请检查并调整配置以确保正确映射。")
+            .arg(errorMessage));
+    } else {
+        m_autoBrightness->saveSettings();
+        QMessageBox::information(this, "配置成功", 
+            QString("最大亮度已配置:\n摄像头亮度: %1\n屏幕亮度: %2")
+            .arg(cameraBrightness).arg(screenBrightness));
+    }
 }
 
 void MainWindow::on_useCurveCheckBox_toggled(bool checked)
