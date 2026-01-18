@@ -140,7 +140,7 @@ private slots:
     }
 };
 
-// Factory function for creating test instance
+// Test instance creation function for Qt test framework
 QObject* createTestNewFeaturesInstance() {
     return new TestNewFeatures();
 }

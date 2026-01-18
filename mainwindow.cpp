@@ -168,8 +168,9 @@ void MainWindow::updateCameraBrightness(int brightness)
 {
     ui->cameraBrightnessLabel->setText(QString::number(brightness));
     
-    // 更新灰阶色块
-    QString styleSheet = QString("background-color: rgb(%1, %1, %1);").arg(brightness * 255 / 100);
+    // 更新灰阶色块 - 使用浮点运算避免精度损失
+    int grayValue = static_cast<int>(brightness * 255.0 / 100.0);
+    QString styleSheet = QString("background-color: rgb(%1, %1, %1);").arg(grayValue);
     ui->cameraBrightnessBlock->setStyleSheet(styleSheet);
 }
 
@@ -239,8 +240,10 @@ void MainWindow::quitApplication()
 void MainWindow::setAutoStart(bool enable)
 {
 #ifdef Q_OS_WIN
-    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", 
-                      QSettings::NativeFormat);
+    static const QString AUTO_START_REGISTRY_PATH = 
+        "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    
+    QSettings settings(AUTO_START_REGISTRY_PATH, QSettings::NativeFormat);
     if (enable) {
         QString appPath = QCoreApplication::applicationFilePath();
         appPath = QDir::toNativeSeparators(appPath);
@@ -254,8 +257,10 @@ void MainWindow::setAutoStart(bool enable)
 bool MainWindow::isAutoStartEnabled()
 {
 #ifdef Q_OS_WIN
-    QSettings settings("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", 
-                      QSettings::NativeFormat);
+    static const QString AUTO_START_REGISTRY_PATH = 
+        "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+    
+    QSettings settings(AUTO_START_REGISTRY_PATH, QSettings::NativeFormat);
     return settings.contains("AutoBrightnessWidget");
 #else
     return false;

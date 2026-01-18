@@ -164,6 +164,7 @@ int AutoBrightness::mapBrightness(int cameraBrightness) {
     
     // 线性映射
     if (m_maxCameraBrightness == m_minCameraBrightness) {
+        qWarning() << "Warning: Min and max camera brightness are equal, mapping is undefined. Returning min screen brightness.";
         return m_minScreenBrightness;
     }
     
@@ -189,7 +190,8 @@ int AutoBrightness::interpolateCurve(int cameraBrightness) {
     }
     
     // 找到两个相邻的点进行插值
-    for (size_t i = 0; i < m_curvePoints.size() - 1; ++i) {
+    // 使用 int 作为循环计数器以避免 size_t 下溢问题
+    for (int i = 0; i < static_cast<int>(m_curvePoints.size()) - 1; ++i) {
         if (cameraBrightness >= m_curvePoints[i].first && 
             cameraBrightness <= m_curvePoints[i + 1].first) {
             // 线性插值
