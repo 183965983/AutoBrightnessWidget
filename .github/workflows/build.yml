@@ -266,11 +266,30 @@ jobs:
         }
         
         # Copy OpenCV DLLs
-        $opencvBinPath = "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin"
+        # Try to find the correct VC version directory
+        $opencvX64Path = "$env:GITHUB_WORKSPACE\opencv\build\x64"
+        if (-not (Test-Path $opencvX64Path)) {
+            Write-Error "OpenCV x64 directory not found at $opencvX64Path"
+            exit 1
+        }
+        
+        # Find the VC directory (could be vc16, vc17, etc.)
+        $vcDirs = Get-ChildItem -Path $opencvX64Path -Directory | Where-Object { $_.Name -match "^vc\d+$" }
+        if ($vcDirs.Count -eq 0) {
+            Write-Error "No VC directory found in $opencvX64Path"
+            exit 1
+        }
+        
+        # Use the first (or only) VC directory found
+        $vcDir = $vcDirs[0]
+        $opencvBinPath = Join-Path $vcDir.FullName "bin"
+        Write-Host "Using OpenCV bin path: $opencvBinPath"
+        
         if (-not (Test-Path $opencvBinPath)) {
             Write-Error "OpenCV bin directory not found at $opencvBinPath"
             exit 1
         }
+        
         $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
         if ($opencvDlls.Count -eq 0) {
             Write-Error "No OpenCV DLLs found in $opencvBinPath"
