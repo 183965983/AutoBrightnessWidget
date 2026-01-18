@@ -515,6 +515,7 @@ The screenshot is embedded inline, making it easy to visually verify the UI with
 - No account or authentication required
 - Images are publicly accessible via direct links
 - Perfect for embedding in GitHub comments
+- Note: In production, consider storing the Client-ID as a GitHub secret
 
 **Fallback Mechanism:**
 - If Imgur upload fails (`continue-on-error: true`), the workflow continues

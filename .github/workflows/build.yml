@@ -389,7 +389,7 @@ jobs:
                 echo "IMGUR_SUCCESS=true" >> $env:GITHUB_ENV
             }
         } catch {
-            Write-Host "Upload failed"
+            Write-Host "Upload failed - $($_.Exception.Message)"
             echo "IMGUR_SUCCESS=false" >> $env:GITHUB_ENV
         }
       shell: pwsh
