@@ -257,7 +257,7 @@ jobs:
         Write-Host "Running windeployqt..."
         # Change to release-package directory so windeployqt can access current directory
         Push-Location release-package
-        & $windeployqt AutoBrightnessWidget.exe --release --no-compiler-runtime
+        & $windeployqt AutoBrightnessWidget.exe --release --no-compiler-runtime --no-translations
         $deployResult = $LASTEXITCODE
         Pop-Location
         if ($deployResult -ne 0) {
