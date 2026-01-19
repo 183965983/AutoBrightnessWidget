@@ -182,6 +182,12 @@ The application automatically checks for updates when launched:
 - Click "暂不更新" to skip the update and continue using the current version
 - The update check happens in the background and won't block the application startup
 
+1. 启动应用程序 / Launch the application
+2. 点击"开始"按钮启用自动亮度调节 / Click the start button to begin automatic brightness adjustment
+3. 程序将使用摄像头检测环境光线 / The application will use your webcam to detect ambient light
+4. 屏幕亮度会根据光线条件自动调整 / Screen brightness will be adjusted automatically based on lighting conditions
+5. 点击"停止"按钮禁用自动调节 / Click stop to disable automatic adjustment
+
 ## Project Structure
 
 ```
