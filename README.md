@@ -27,6 +27,7 @@ For the latest development build with cutting-edge features, download artifacts 
 - Uses computer webcam for light sensing
 - Qt-based graphical user interface
 - Cross-platform support (Windows focus)
+- **Auto-update checker**: Automatically checks for new releases on startup and notifies users when updates are available
 
 ## Requirements
 
@@ -125,6 +126,14 @@ The release workflow will automatically build and package the application with a
 4. Screen brightness will be adjusted automatically based on lighting conditions
 5. Click stop to disable automatic adjustment
 
+### Auto-Update Feature
+
+The application automatically checks for updates when launched:
+- If a new version is available, a dialog will appear with the update details
+- Click "下载新版本" to visit the release page and download the latest version
+- Click "暂不更新" to skip the update and continue using the current version
+- The update check happens in the background and won't block the application startup
+
 ## Project Structure
 
 ```
@@ -147,6 +156,11 @@ AutoBrightnessWidget/
   - Brightness calculation from video frames
   - System brightness adjustment
   - Threading for continuous monitoring
+- **UpdateChecker**: Handles automatic update checks:
+  - Queries GitHub API for latest releases
+  - Compares version numbers
+  - Notifies when updates are available
+- **UpdateDialog**: Displays update notifications with release information
 
 ## Contributing
 
