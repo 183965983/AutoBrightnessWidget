@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QCloseEvent>
+#include <QLabel>
 #include "AutoBrightness.h"
 
 QT_BEGIN_NAMESPACE
@@ -55,6 +56,9 @@ private:
     void setAutoStart(bool enable);
     bool isAutoStartEnabled();
     QIcon createTrayIcon();
+    void updateStatusBar();
+    void updateButtonStates();
+    void updateLastUpdateTime();
     void updateTrayMenu();  // 更新托盘菜单状态
     
     Ui::MainWindow *ui;
@@ -68,5 +72,9 @@ private:
     QAction* m_startAction;  // 启动菜单项
     QAction* m_stopAction;   // 停止菜单项
     bool m_minimizeToTray;
+    
+    // 状态栏标签
+    QLabel* m_statusLabel;
+    QLabel* m_lastUpdateLabel;
 };
 #endif // MAINWINDOW_H

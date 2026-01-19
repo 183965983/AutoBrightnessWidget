@@ -8,6 +8,8 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QIcon>
+#include <QLabel>
+#include <QTime>
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
@@ -27,11 +29,19 @@ MainWindow::MainWindow(QWidget *parent)
     , m_startAction(nullptr)
     , m_stopAction(nullptr)
     , m_minimizeToTray(false)
+    , m_statusLabel(nullptr)
+    , m_lastUpdateLabel(nullptr)
 {
     ui->setupUi(this);
     
     // 设置窗口标题
     setWindowTitle("Auto Brightness Widget");
+    
+    // 设置状态栏
+    m_statusLabel = new QLabel("状态: 已停止", this);
+    m_lastUpdateLabel = new QLabel("最后更新: --", this);
+    ui->statusbar->addWidget(m_statusLabel);
+    ui->statusbar->addPermanentWidget(m_lastUpdateLabel);
     
     // 连接信号槽
     connect(m_autoBrightness, &AutoBrightness::cameraBrightnessChanged,
@@ -52,6 +62,9 @@ MainWindow::MainWindow(QWidget *parent)
     // 初始化显示
     updateCameraBrightness(0);
     updateScreenBrightness(0);
+    
+    // 初始化按钮状态
+    updateButtonStates();
 }
 
 MainWindow::~MainWindow()
@@ -82,6 +95,9 @@ void MainWindow::on_pushButton_clicked()
     }
     
     m_running = true;
+    updateStatusBar();
+    updateButtonStates();
+    
     m_autoBrightThread = QThread::create(
         [this](){
             AutoBrightness::getInstance()->openCap();
@@ -102,6 +118,9 @@ void MainWindow::on_pushButton_clicked()
 void MainWindow::on_pushButton_2_clicked()
 {
     m_running = false;
+    updateStatusBar();
+    updateButtonStates();
+    
     if(m_autoBrightThread){
         m_autoBrightThread->wait();
         delete m_autoBrightThread;
@@ -225,6 +244,11 @@ void MainWindow::updateCameraBrightness(int brightness)
     int grayValue = static_cast<int>(brightness * 255.0 / 100.0);
     QString styleSheet = QString("background-color: rgb(%1, %1, %1);").arg(grayValue);
     ui->cameraBrightnessBlock->setStyleSheet(styleSheet);
+    
+    // 更新状态栏的最后更新时间
+    if (m_running) {
+        updateLastUpdateTime();
+    }
 }
 
 void MainWindow::updateScreenBrightness(int brightness)
@@ -397,4 +421,51 @@ bool MainWindow::isAutoStartEnabled()
     return false;
 #endif
 }
+
+void MainWindow::updateStatusBar()
+{
+    if (!m_statusLabel || !m_lastUpdateLabel) {
+        return;
+    }
+    
+    if (m_running) {
+        m_statusLabel->setText("状态: 正在运行");
+        updateLastUpdateTime();
+    } else {
+        m_statusLabel->setText("状态: 已停止");
+        m_lastUpdateLabel->setText("最后更新: --");
+    }
+}
+
+void MainWindow::updateLastUpdateTime()
+{
+    if (!m_lastUpdateLabel) {
+        return;
+    }
+    
+    QTime currentTime = QTime::currentTime();
+    m_lastUpdateLabel->setText(QString("最后更新: %1").arg(currentTime.toString("HH:mm:ss")));
+}
+
+void MainWindow::updateButtonStates()
+{
+    // 更新启动按钮
+    if (m_running) {
+        ui->pushButton->setEnabled(false);
+        ui->pushButton->setToolTip("自动亮度调节正在运行中");
+    } else {
+        ui->pushButton->setEnabled(true);
+        ui->pushButton->setToolTip("点击启动自动亮度调节");
+    }
+    
+    // 更新停止按钮
+    if (m_running) {
+        ui->pushButton_2->setEnabled(true);
+        ui->pushButton_2->setToolTip("点击停止自动亮度调节");
+    } else {
+        ui->pushButton_2->setEnabled(false);
+        ui->pushButton_2->setToolTip("自动亮度调节未运行");
+    }
+}
+
 
