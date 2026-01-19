@@ -48,6 +48,8 @@ private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     void showWindowFromTray();
     void quitApplication();
+    void startFromTray();
+    void stopFromTray();
 
 private:
     void setupSystemTray();
@@ -57,6 +59,7 @@ private:
     void updateStatusBar();
     void updateButtonStates();
     void updateLastUpdateTime();
+    void updateTrayMenu();  // 更新托盘菜单状态
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;
@@ -66,6 +69,8 @@ private:
     // 系统托盘
     QSystemTrayIcon* m_trayIcon;
     QMenu* m_trayMenu;
+    QAction* m_startAction;  // 启动菜单项
+    QAction* m_stopAction;   // 停止菜单项
     bool m_minimizeToTray;
     
     // 状态栏标签
