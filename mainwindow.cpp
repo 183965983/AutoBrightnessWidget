@@ -334,7 +334,7 @@ void MainWindow::showWindowFromTray()
 
 void MainWindow::startFromTray()
 {
-    if(!m_running){
+    if (!m_running) {
         on_pushButton_clicked();  // 调用现有的启动逻辑
         // updateTrayMenu() 已在 on_pushButton_clicked() 中调用
     }
@@ -342,7 +342,7 @@ void MainWindow::startFromTray()
 
 void MainWindow::stopFromTray()
 {
-    if(m_running){
+    if (m_running) {
         on_pushButton_2_clicked();  // 调用现有的停止逻辑
         // updateTrayMenu() 已在 on_pushButton_2_clicked() 中调用
     }
