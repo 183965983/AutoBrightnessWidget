@@ -6,6 +6,7 @@ set(TEST_SOURCES
     test_brightness.cpp
     test_ui.cpp
     test_new_features.cpp
+    test_multi_monitor.cpp
     test_update_checker.cpp
     test_status_bar.cpp
     MockCamera.cpp
@@ -21,6 +22,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
+        ../MonitorConfigDialog.cpp
+        ../MonitorConfigDialog.h
         ../UpdateChecker.cpp
         ../UpdateChecker.h
         ../UpdateDialog.cpp
@@ -38,6 +41,8 @@ else()
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
+        ../MonitorConfigDialog.cpp
+        ../MonitorConfigDialog.h
         ../UpdateChecker.cpp
         ../UpdateChecker.h
         ../UpdateDialog.cpp

@@ -36,6 +36,7 @@ set(PROJECT_SOURCES
         AutoBrightness.cpp
         CurveEditorWidget.cpp
         CurveEditorDialog.cpp
+        MonitorConfigDialog.cpp
         UpdateChecker.cpp
         UpdateDialog.cpp
         mainwindow.h
@@ -49,6 +50,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         AutoBrightness.h
         CurveEditorWidget.h
         CurveEditorDialog.h
+        MonitorConfigDialog.h
         UpdateChecker.h
         UpdateDialog.h
     )

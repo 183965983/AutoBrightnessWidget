@@ -5,6 +5,7 @@
 class TestBrightness;
 class TestUI;
 class TestNewFeatures;
+class TestMultiMonitor;
 class TestUpdateChecker;
 class TestStatusBar;
 
@@ -12,6 +13,7 @@ class TestStatusBar;
 extern QObject* createTestBrightnessInstance();
 extern QObject* createTestUIInstance();
 extern QObject* createTestNewFeaturesInstance();
+extern QObject* createTestMultiMonitorInstance();
 extern QObject* createTestUpdateCheckerInstance();
 extern QObject* createTestStatusBarInstance();
 
@@ -38,6 +40,13 @@ int main(int argc, char *argv[])
     // Run new features tests
     {
         QObject* tc = createTestNewFeaturesInstance();
+        status |= QTest::qExec(tc, argc, argv);
+        delete tc;
+    }
+    
+    // Run multi-monitor tests
+    {
+        QObject* tc = createTestMultiMonitorInstance();
         status |= QTest::qExec(tc, argc, argv);
         delete tc;
     }

@@ -48,11 +48,26 @@ A Qt-based desktop application for automatic screen brightness adjustment using 
 ## 功能特性 / Features
 
 - 🌞 基于环境光自动调节屏幕亮度 / Automatic brightness adjustment based on ambient light
+- 🖥️ **多显示器支持** - 为每个显示器配置独立的亮度曲线 / **Multi-monitor support** - Configure different brightness curves for each display
+- 📷 使用电脑摄像头感知环境光线 / Uses computer webcam for light sensing
+- 🎨 可自定义亮度曲线以实现精细控制 / **Customizable brightness curves** for fine-tuned control
+- 🔔 系统托盘集成，支持最小化到托盘 / **System tray integration** with minimize to tray support
+- 💾 配置持久化保存 / Configuration persistence across sessions
 - 📷 使用电脑摄像头感知环境光线 / Uses computer webcam for light sensing
 - 🎨 Qt 图形界面，操作简单直观 / Qt-based graphical user interface
 - 💻 跨平台支持（主要支持 Windows）/ Cross-platform support (Windows focus)
 - 📦 提供安装包和便携版两种分发形式 / Available as installer and portable version
 - 🔄 自动更新检查器：启动时检查新版本并通知用户 / Auto-update checker: Checks for new releases on startup and notifies users
+
+### 多显示器支持（新功能！）/ Multi-Monitor Support (New!)
+
+为每个连接的显示器配置独立的亮度曲线：
+- 所有显示器共享同一个摄像头输入 / All monitors share the same camera input
+- 每个显示器可以有自己的亮度映射 / Each monitor can have its own brightness mapping
+- 支持每个显示器的自定义曲线 / Support for custom curves per monitor
+- 易于使用的配置对话框 / Easy-to-use configuration dialog
+
+详细文档请参阅 [MULTI_MONITOR_SUPPORT.md](MULTI_MONITOR_SUPPORT.md) / See [MULTI_MONITOR_SUPPORT.md](MULTI_MONITOR_SUPPORT.md) for detailed documentation.
 
 ## 系统要求 / Requirements
 

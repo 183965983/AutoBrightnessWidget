@@ -14,6 +14,7 @@
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
+#include "MonitorConfigDialog.h"
 #include "UpdateChecker.h"
 #include "UpdateDialog.h"
 
@@ -62,6 +63,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->autoStartCheckBox->setChecked(isAutoStartEnabled());
     ui->useCurveCheckBox->setChecked(m_autoBrightness->getUseCurve());
     
+    // 初始化显示器列表（后台异步）
+    // 注意：在主线程启动前不刷新，避免阻塞 UI
+    
     // 初始化显示
     updateCameraBrightness(0);
     updateScreenBrightness(0);
@@ -98,6 +102,18 @@ void MainWindow::on_pushButton_clicked()
 {
     if(m_running){
         return; // Already running
+    }
+    
+    // 刷新显示器列表
+    m_autoBrightness->refreshMonitors();
+    if (m_autoBrightness->getMonitorCount() == 0) {
+        QMessageBox::warning(this, "警告", 
+                           "未检测到支持亮度调节的显示器。\n"
+                           "请确保：\n"
+                           "1. 显示器已连接并开启\n"
+                           "2. 显示器支持 DDC/CI 协议\n"
+                           "3. 在显示器 OSD 菜单中启用了 DDC/CI");
+        return;
     }
     
     m_running = true;
@@ -228,6 +244,12 @@ void MainWindow::on_editCurveButton_clicked()
         QMessageBox::information(this, "曲线已保存", 
             QString("曲线控制点数量: %1\n曲线映射已更新并保存").arg(points.size()));
     }
+}
+
+void MainWindow::on_monitorConfigButton_clicked()
+{
+    MonitorConfigDialog dialog(this);
+    dialog.exec();
 }
 
 void MainWindow::on_autoStartCheckBox_toggled(bool checked)
