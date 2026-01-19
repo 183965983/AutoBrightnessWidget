@@ -8,9 +8,12 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QIcon>
+#include <QTimer>
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
+#include "UpdateChecker.h"
+#include "UpdateDialog.h"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -50,6 +53,9 @@ MainWindow::MainWindow(QWidget *parent)
     // 初始化显示
     updateCameraBrightness(0);
     updateScreenBrightness(0);
+    
+    // 窗口显示后延迟检查更新（避免阻塞启动）
+    QTimer::singleShot(1000, this, &MainWindow::checkForUpdates);
 }
 
 MainWindow::~MainWindow()
@@ -349,4 +355,48 @@ bool MainWindow::isAutoStartEnabled()
     return false;
 #endif
 }
+
+void MainWindow::checkForUpdates()
+{
+    // 创建更新检查器
+    UpdateChecker* updateChecker = new UpdateChecker(
+        "0.1.0",  // 当前版本，应与 CMakeLists.txt 保持一致
+        "183965983",
+        "AutoBrightnessWidget",
+        this
+    );
+    
+    // 连接信号
+    connect(updateChecker, &UpdateChecker::updateAvailable,
+            this, &MainWindow::onUpdateAvailable);
+    connect(updateChecker, &UpdateChecker::noUpdateAvailable,
+            this, &MainWindow::onNoUpdateAvailable);
+    connect(updateChecker, &UpdateChecker::checkFailed,
+            this, &MainWindow::onUpdateCheckFailed);
+    
+    // 开始检查
+    updateChecker->checkForUpdates();
+}
+
+void MainWindow::onUpdateAvailable(const QString& latestVersion,
+                                   const QString& releaseUrl,
+                                   const QString& releaseNotes)
+{
+    // 显示更新对话框
+    UpdateDialog dialog("0.1.0", latestVersion, releaseUrl, releaseNotes, this);
+    dialog.exec();
+}
+
+void MainWindow::onNoUpdateAvailable()
+{
+    // 静默处理，不打扰用户
+    qDebug() << "已是最新版本";
+}
+
+void MainWindow::onUpdateCheckFailed(const QString& errorMessage)
+{
+    // 更新检查失败，静默记录日志即可
+    qDebug() << "更新检查失败:" << errorMessage;
+}
+
 

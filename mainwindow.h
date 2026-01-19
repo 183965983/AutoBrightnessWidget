@@ -47,12 +47,20 @@ private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     void showWindowFromTray();
     void quitApplication();
+    
+    // 更新检查槽
+    void onUpdateAvailable(const QString& latestVersion,
+                          const QString& releaseUrl,
+                          const QString& releaseNotes);
+    void onNoUpdateAvailable();
+    void onUpdateCheckFailed(const QString& errorMessage);
 
 private:
     void setupSystemTray();
     void setAutoStart(bool enable);
     bool isAutoStartEnabled();
     QIcon createTrayIcon();
+    void checkForUpdates();
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;
