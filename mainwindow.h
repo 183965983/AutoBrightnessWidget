@@ -47,6 +47,8 @@ private slots:
     void onTrayIconActivated(QSystemTrayIcon::ActivationReason reason);
     void showWindowFromTray();
     void quitApplication();
+    void startFromTray();
+    void stopFromTray();
     
     // 更新检查槽
     void onUpdateAvailable(const QString& latestVersion,
@@ -60,6 +62,7 @@ private:
     void setAutoStart(bool enable);
     bool isAutoStartEnabled();
     QIcon createTrayIcon();
+    void updateTrayMenu();  // 更新托盘菜单状态
     void checkForUpdates();
     
     Ui::MainWindow *ui;
@@ -70,6 +73,8 @@ private:
     // 系统托盘
     QSystemTrayIcon* m_trayIcon;
     QMenu* m_trayMenu;
+    QAction* m_startAction;  // 启动菜单项
+    QAction* m_stopAction;   // 停止菜单项
     bool m_minimizeToTray;
 };
 #endif // MAINWINDOW_H
