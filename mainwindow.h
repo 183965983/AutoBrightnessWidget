@@ -56,6 +56,7 @@ private:
     QIcon createTrayIcon();
     void updateStatusBar();
     void updateButtonStates();
+    void updateLastUpdateTime();
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;

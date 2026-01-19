@@ -239,8 +239,7 @@ void MainWindow::updateCameraBrightness(int brightness)
     
     // 更新状态栏的最后更新时间
     if (m_running) {
-        QTime currentTime = QTime::currentTime();
-        m_lastUpdateLabel->setText(QString("最后更新: %1").arg(currentTime.toString("HH:mm:ss")));
+        updateLastUpdateTime();
     }
 }
 
@@ -379,12 +378,17 @@ void MainWindow::updateStatusBar()
 {
     if (m_running) {
         m_statusLabel->setText("状态: 正在运行");
-        QTime currentTime = QTime::currentTime();
-        m_lastUpdateLabel->setText(QString("最后更新: %1").arg(currentTime.toString("HH:mm:ss")));
+        updateLastUpdateTime();
     } else {
         m_statusLabel->setText("状态: 已停止");
         m_lastUpdateLabel->setText("最后更新: --");
     }
+}
+
+void MainWindow::updateLastUpdateTime()
+{
+    QTime currentTime = QTime::currentTime();
+    m_lastUpdateLabel->setText(QString("最后更新: %1").arg(currentTime.toString("HH:mm:ss")));
 }
 
 void MainWindow::updateButtonStates()
