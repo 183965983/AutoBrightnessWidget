@@ -118,6 +118,9 @@ This project uses GitHub Actions for continuous integration and deployment. See 
   - **Package Job**: Creates release packages (only on push to main branches, depends on test)
   - **Purpose**: Required for PRs - must pass build and test before merging
 - **Release**: Creates GitHub releases when version tags are pushed
+- **Auto-Release**: 🆕 Automatically creates pre-releases on every merge to main/master
+  - Generates both installer and portable packages
+  - See [AUTO_RELEASE.md](AUTO_RELEASE.md) for details
 
 ### Testing
 
