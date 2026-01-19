@@ -53,6 +53,8 @@ private:
     void setAutoStart(bool enable);
     bool isAutoStartEnabled();
     QIcon createTrayIcon();
+    void updateStatusBar();
+    void updateButtonStates();
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;
@@ -63,5 +65,9 @@ private:
     QSystemTrayIcon* m_trayIcon;
     QMenu* m_trayMenu;
     bool m_minimizeToTray;
+    
+    // 状态栏标签
+    QLabel* m_statusLabel;
+    QLabel* m_lastUpdateLabel;
 };
 #endif // MAINWINDOW_H
