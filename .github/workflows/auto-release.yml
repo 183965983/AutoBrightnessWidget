@@ -1,0 +1,527 @@
+name: Auto Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for proper version numbering
+    
+    - name: Set up MSVC
+      uses: microsoft/setup-msbuild@v2
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    
+    - name: Install OpenCV
+      run: |
+        $opencvVersion = "4.10.0"
+        $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
+        $opencvInstaller = "opencv-installer.exe"
+        
+        Write-Host "Downloading OpenCV ${opencvVersion}..."
+        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
+        
+        Write-Host "Extracting OpenCV..."
+        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
+            Write-Error "OpenCV extraction failed"
+            exit 1
+        }
+        
+        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
+        } else {
+            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
+        }
+        
+        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
+            Write-Error "OpenCV build directory not found after extraction"
+            exit 1
+        }
+        
+        echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
+        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
+      shell: pwsh
+    
+    - name: Package OpenCV DLLs for reuse
+      run: |
+        mkdir opencv-dlls
+        
+        $opencvX64Path = "$env:GITHUB_WORKSPACE\opencv\build\x64"
+        $vcDirs = Get-ChildItem -Path $opencvX64Path -Directory | Where-Object { $_.Name -match "^vc\d+$" }
+        
+        if ($vcDirs.Count -eq 0) {
+            Write-Error "No VC directory found in $opencvX64Path"
+            exit 1
+        }
+        
+        $vcDir = $vcDirs[0]
+        $opencvBinPath = Join-Path $vcDir.FullName "bin"
+        
+        $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
+        if ($opencvDlls.Count -eq 0) {
+            Write-Error "No OpenCV DLLs found in $opencvBinPath"
+            exit 1
+        }
+        
+        Write-Host "Packaging OpenCV DLLs for reuse..."
+        $opencvDlls | Copy-Item -Destination opencv-dlls/
+        
+        Write-Host "OpenCV DLLs packaged successfully"
+      shell: pwsh
+    
+    - name: Upload OpenCV DLLs
+      uses: actions/upload-artifact@v4
+      with:
+        name: opencv-dlls
+        path: opencv-dlls/*
+        if-no-files-found: error
+        retention-days: 1
+  
+  package-portable:
+    needs: build
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: build-artifacts
+        path: build-artifacts
+    
+    - name: Download OpenCV DLLs
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: opencv-dlls
+        path: opencv-dlls
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    
+    - name: Package portable application
+      run: |
+        mkdir release-portable
+        
+        if (-not (Test-Path "build-artifacts/AutoBrightnessWidget.exe")) {
+            Write-Error "Application executable not found in build artifacts"
+            exit 1
+        }
+        Copy-Item build-artifacts/*.exe release-portable/
+        Copy-Item build-artifacts/*.dll release-portable/ -ErrorAction SilentlyContinue
+        
+        # Copy README and LICENSE if they exist
+        if (Test-Path "README.md") {
+            Copy-Item README.md release-portable/
+        }
+        if (Test-Path "LICENSE") {
+            Copy-Item LICENSE release-portable/
+        }
+        
+        # Deploy Qt dependencies
+        $windeployqt = Join-Path $env:Qt6_DIR "bin\windeployqt.exe"
+        if (-not (Test-Path $windeployqt)) {
+            Write-Error "windeployqt not found at $windeployqt"
+            exit 1
+        }
+        Write-Host "Running windeployqt..."
+        Push-Location release-portable
+        & $windeployqt AutoBrightnessWidget.exe --release --no-compiler-runtime --no-translations
+        $deployResult = $LASTEXITCODE
+        Pop-Location
+        if ($deployResult -ne 0) {
+            Write-Error "windeployqt failed with exit code $deployResult"
+            exit 1
+        }
+        
+        # Copy OpenCV DLLs from artifacts
+        if (-not (Test-Path "opencv-dlls")) {
+            Write-Error "OpenCV DLLs directory not found"
+            exit 1
+        }
+        
+        Write-Host "Copying OpenCV DLLs from artifacts..."
+        Copy-Item opencv-dlls/*.dll release-portable/
+        
+        # Create zip archive
+        Write-Host "Creating portable archive..."
+        Compress-Archive -Path release-portable\* -DestinationPath AutoBrightnessWidget-Portable-Windows-x64.zip
+        
+        Write-Host "Portable package created successfully"
+        
+        Write-Host "`nPackage contents:"
+        Get-ChildItem release-portable | Format-Table Name, Length
+      shell: pwsh
+    
+    - name: Upload portable package
+      uses: actions/upload-artifact@v4
+      with:
+        name: portable-package
+        path: AutoBrightnessWidget-Portable-Windows-x64.zip
+        if-no-files-found: error
+        retention-days: 90
+  
+  package-installer:
+    needs: build
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: build-artifacts
+        path: build-artifacts
+    
+    - name: Download OpenCV DLLs
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: opencv-dlls
+        path: opencv-dlls
+    
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.0'
+        arch: 'win64_msvc2019_64'
+        cache: true
+    
+    - name: Prepare installer files
+      run: |
+        mkdir installer-files
+        
+        if (-not (Test-Path "build-artifacts/AutoBrightnessWidget.exe")) {
+            Write-Error "Application executable not found in build artifacts"
+            exit 1
+        }
+        Copy-Item build-artifacts/*.exe installer-files/
+        Copy-Item build-artifacts/*.dll installer-files/ -ErrorAction SilentlyContinue
+        
+        # Deploy Qt dependencies
+        $windeployqt = Join-Path $env:Qt6_DIR "bin\windeployqt.exe"
+        if (-not (Test-Path $windeployqt)) {
+            Write-Error "windeployqt not found at $windeployqt"
+            exit 1
+        }
+        Write-Host "Running windeployqt..."
+        Push-Location installer-files
+        & $windeployqt AutoBrightnessWidget.exe --release --no-compiler-runtime --no-translations
+        $deployResult = $LASTEXITCODE
+        Pop-Location
+        if ($deployResult -ne 0) {
+            Write-Error "windeployqt failed with exit code $deployResult"
+            exit 1
+        }
+        
+        # Copy OpenCV DLLs from artifacts
+        if (-not (Test-Path "opencv-dlls")) {
+            Write-Error "OpenCV DLLs directory not found"
+            exit 1
+        }
+        
+        Write-Host "Copying OpenCV DLLs from artifacts..."
+        Copy-Item opencv-dlls/*.dll installer-files/
+        
+        Write-Host "Installer files prepared successfully"
+        
+        Write-Host "`nInstaller files:"
+        Get-ChildItem installer-files | Format-Table Name, Length
+      shell: pwsh
+    
+    - name: Install Inno Setup
+      run: |
+        Write-Host "Installing Inno Setup via Chocolatey..."
+        
+        # Ensure Chocolatey is available (it is pre-installed on GitHub-hosted Windows runners)
+        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+          Write-Error "Chocolatey is not available on this runner."
+          exit 1
+        }
+        
+        # Install a specific Inno Setup version for reproducible builds
+        $innoVersion = "6.2.2"
+        choco install innosetup --version=$innoVersion --yes --no-progress
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Inno Setup installation failed with exit code $LASTEXITCODE"
+          exit 1
+        }
+        
+        Write-Host "Inno Setup installed successfully via Chocolatey (version $innoVersion)"
+      shell: pwsh
+    
+    - name: Create Inno Setup script
+      run: |
+        # Get version from CMakeLists.txt or use date-based version
+        $version = "0.1.0"
+        if (Test-Path "CMakeLists.txt") {
+            $cmakeContent = Get-Content "CMakeLists.txt" -Raw
+            if ($cmakeContent -match 'project\([^\)]*VERSION\s+(\d+\.\d+)') {
+                $version = $matches[1] + ".0"
+            }
+        }
+        
+        # Generate build date version for pre-release (match the format in release job)
+        $buildDate = Get-Date -Format "yyyyMMdd"
+        $shortSha = git rev-parse --short HEAD
+        $fullVersion = "${version}-pre.${buildDate}.${shortSha}"
+        
+        # Read template and replace version placeholder
+        $templateContent = Get-Content "installer-script.iss.template" -Raw
+        $issContent = $templateContent -replace '{{VERSION}}', $fullVersion
+        
+        Set-Content -Path "installer-script.iss" -Value $issContent
+        Write-Host "Inno Setup script created with version: $fullVersion"
+        
+        # Save version for later use
+        echo "APP_VERSION=$fullVersion" >> $env:GITHUB_ENV
+      shell: pwsh
+    
+    - name: Build installer
+      run: |
+        # Find Inno Setup compiler dynamically
+        $isccPath = $null
+        
+        # First, try to locate ISCC.exe via PATH
+        $isccCommand = Get-Command "iscc.exe" -ErrorAction SilentlyContinue
+        if ($isccCommand) {
+            $isccPath = $isccCommand.Source
+        } else {
+            # Fallback: check common installation paths
+            $possiblePaths = @(
+                Join-Path "${env:ProgramFiles(x86)}" "Inno Setup 6\ISCC.exe",
+                Join-Path "${env:ProgramFiles(x86)}" "Inno Setup 5\ISCC.exe",
+                Join-Path "${env:ProgramFiles}" "Inno Setup 6\ISCC.exe",
+                Join-Path "${env:ProgramFiles}" "Inno Setup 5\ISCC.exe"
+            )
+        
+            foreach ($path in $possiblePaths) {
+                if ($path -and (Test-Path $path)) {
+                    $isccPath = $path
+                    break
+                }
+            }
+        }
+        
+        if (-not $isccPath -or -not (Test-Path $isccPath)) {
+            Write-Error "Inno Setup compiler (ISCC.exe) not found. Ensure Inno Setup is installed and ISCC.exe is in PATH or in a standard install location."
+            exit 1
+        }
+        
+        Write-Host "Using Inno Setup compiler at: $isccPath"
+        
+        Write-Host "Building installer..."
+        & $isccPath "installer-script.iss"
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Error "Installer build failed with exit code $LASTEXITCODE"
+            exit 1
+        }
+        
+        if (-not (Test-Path "AutoBrightnessWidget-Setup-Windows-x64.exe")) {
+            Write-Error "Installer executable not found after build"
+            exit 1
+        }
+        
+        Write-Host "Installer created successfully"
+        
+        # Get file size
+        $installerSize = (Get-Item "AutoBrightnessWidget-Setup-Windows-x64.exe").Length
+        Write-Host "Installer size: $([math]::Round($installerSize / 1MB, 2)) MB"
+      shell: pwsh
+    
+    - name: Upload installer package
+      uses: actions/upload-artifact@v4
+      with:
+        name: installer-package
+        path: AutoBrightnessWidget-Setup-Windows-x64.exe
+        if-no-files-found: error
+        retention-days: 90
+  
+  create-prerelease:
+    needs: [package-portable, package-installer]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Download portable package
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: portable-package
+        path: release-files
+    
+    - name: Download installer package
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: installer-package
+        path: release-files
+    
+    - name: Generate version and release notes
+      id: release_info
+      run: |
+        # Generate version based on date and commit
+        BUILD_DATE=$(date +%Y%m%d)
+        SHORT_SHA=$(git rev-parse --short HEAD)
+        VERSION="v0.1.0-pre.${BUILD_DATE}.${SHORT_SHA}"
+        
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Generated version: ${VERSION}"
+        
+        # Get latest merge commit info
+        MERGE_COMMIT=$(git log -1 --merges --pretty=format:"%H" 2>/dev/null || echo "")
+        
+        if [ -n "$MERGE_COMMIT" ]; then
+          echo "Found merge commit: ${MERGE_COMMIT}"
+          MERGE_MESSAGE=$(git log -1 --pretty=format:"%s" ${MERGE_COMMIT})
+          MERGE_BODY=$(git log -1 --pretty=format:"%b" ${MERGE_COMMIT})
+          # 使用 grep + sed 而不是 grep -P，避免依赖 Perl 正则以提高在不同运行环境中的兼容性
+          PR_NUMBER=$(echo "$MERGE_MESSAGE" | grep -o '#[0-9]\+' | head -1 | sed 's/#//' || echo "")
+          
+          # Generate release notes with merge information
+          cat > release_notes.md << EOF
+        ## 🚀 自动预发布 ${VERSION}
+        
+        此版本基于最新的 merge 自动构建和发布。
+        
+        ### 📝 最近的更改
+        
+        **Merge Commit:** ${MERGE_MESSAGE}
+        
+        ${MERGE_BODY}
+        
+        ### 📦 下载说明
+        
+        本次发布提供两种安装方式：
+        
+        1. **Windows 安装包** (`AutoBrightnessWidget-Setup-Windows-x64.exe`)
+           - 完整的安装程序，带有安装向导
+           - 自动创建桌面快捷方式和开始菜单项
+           - 支持一键安装和卸载
+           - 推荐普通用户使用
+        
+        2. **便携版** (`AutoBrightnessWidget-Portable-Windows-x64.zip`)
+           - 免安装，解压即用
+           - 适合需要便携使用或不想安装的用户
+           - 包含所有必需的运行库和依赖项
+        
+        ### 💻 系统要求
+        
+        - Windows 10/11 (64位)
+        - 带摄像头的设备
+        - Visual C++ 运行库 (安装包版本会自动安装)
+        
+        ### 🔄 构建信息
+        
+        - **构建时间:** $(date '+%Y-%m-%d %H:%M:%S UTC')
+        - **Commit:** ${SHORT_SHA}
+        - **分支:** ${GITHUB_REF#refs/heads/}
+        
+        ---
+        
+        **注意:** 这是一个预发布版本，可能包含未完全测试的功能。如需稳定版本，请查看 [正式发布](https://github.com/183965983/AutoBrightnessWidget/releases)。
+        EOF
+        else
+          echo "No merge commit found, using regular commit info"
+          LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          LAST_COMMIT_BODY=$(git log -1 --pretty=format:"%b")
+          
+          cat > release_notes.md << EOF
+        ## 🚀 自动预发布 ${VERSION}
+        
+        此版本基于最新代码自动构建和发布。
+        
+        ### 📝 最新提交
+        
+        ${LAST_COMMIT_MSG}
+        
+        ${LAST_COMMIT_BODY}
+        
+        ### 📦 下载说明
+        
+        本次发布提供两种安装方式：
+        
+        1. **Windows 安装包** (`AutoBrightnessWidget-Setup-Windows-x64.exe`)
+           - 完整的安装程序，带有安装向导
+           - 自动创建桌面快捷方式和开始菜单项
+           - 支持一键安装和卸载
+           - 推荐普通用户使用
+        
+        2. **便携版** (`AutoBrightnessWidget-Portable-Windows-x64.zip`)
+           - 免安装，解压即用
+           - 适合需要便携使用或不想安装的用户
+           - 包含所有必需的运行库和依赖项
+        
+        ### 💻 系统要求
+        
+        - Windows 10/11 (64位)
+        - 带摄像头的设备
+        - Visual C++ 运行库 (安装包版本会自动安装)
+        
+        ### 🔄 构建信息
+        
+        - **构建时间:** $(date '+%Y-%m-%d %H:%M:%S UTC')
+        - **Commit:** ${SHORT_SHA}
+        - **分支:** ${GITHUB_REF#refs/heads/}
+        
+        ---
+        
+        **注意:** 这是一个预发布版本，可能包含未完全测试的功能。如需稳定版本，请查看 [正式发布](https://github.com/183965983/AutoBrightnessWidget/releases)。
+        EOF
+        fi
+        
+        cat release_notes.md
+    
+    - name: Create Pre-release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.release_info.outputs.version }}
+        name: "预发布 ${{ steps.release_info.outputs.version }}"
+        body_path: release_notes.md
+        files: |
+          release-files/AutoBrightnessWidget-Setup-Windows-x64.exe
+          release-files/AutoBrightnessWidget-Portable-Windows-x64.zip
+        draft: false
+        prerelease: true
+        generate_release_notes: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
