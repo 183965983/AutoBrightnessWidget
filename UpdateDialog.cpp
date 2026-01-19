@@ -30,13 +30,13 @@ UpdateDialog::~UpdateDialog()
 
 void UpdateDialog::setupUI()
 {
-    setWindowTitle("软件更新");
+    setWindowTitle(tr("软件更新"));
     setMinimumSize(500, 400);
     
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
     // 标题
-    m_titleLabel = new QLabel("发现新版本！", this);
+    m_titleLabel = new QLabel(tr("发现新版本！"), this);
     QFont titleFont = m_titleLabel->font();
     titleFont.setPointSize(14);
     titleFont.setBold(true);
@@ -45,7 +45,7 @@ void UpdateDialog::setupUI()
     mainLayout->addWidget(m_titleLabel);
     
     // 版本信息
-    QString versionText = QString("当前版本: %1\n最新版本: %2")
+    QString versionText = tr("当前版本: %1\n最新版本: %2")
                             .arg(m_currentVersion)
                             .arg(m_latestVersion);
     m_versionLabel = new QLabel(versionText, this);
@@ -59,7 +59,7 @@ void UpdateDialog::setupUI()
     
     // 发布说明
     if (!m_releaseNotes.isEmpty()) {
-        QLabel* notesLabel = new QLabel("更新内容:", this);
+        QLabel* notesLabel = new QLabel(tr("更新内容:"), this);
         QFont notesLabelFont = notesLabel->font();
         notesLabelFont.setBold(true);
         notesLabel->setFont(notesLabelFont);
@@ -77,7 +77,7 @@ void UpdateDialog::setupUI()
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
     
-    m_downloadButton = new QPushButton("下载新版本", this);
+    m_downloadButton = new QPushButton(tr("下载新版本"), this);
     m_downloadButton->setMinimumWidth(120);
     connect(m_downloadButton, &QPushButton::clicked,
             this, &UpdateDialog::onDownloadClicked);
@@ -85,7 +85,7 @@ void UpdateDialog::setupUI()
     
     buttonLayout->addSpacing(10);
     
-    m_skipButton = new QPushButton("暂不更新", this);
+    m_skipButton = new QPushButton(tr("暂不更新"), this);
     m_skipButton->setMinimumWidth(120);
     connect(m_skipButton, &QPushButton::clicked,
             this, &UpdateDialog::onSkipClicked);

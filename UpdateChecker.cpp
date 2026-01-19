@@ -31,7 +31,7 @@ void UpdateChecker::checkForUpdates()
     
     QNetworkRequest request(apiUrl);
     // 设置 User-Agent，GitHub API 要求
-    request.setRawHeader("User-Agent", "AutoBrightnessWidget");
+    request.setRawHeader("User-Agent", GITHUB_REPO);
     
     QNetworkReply* reply = m_networkManager->get(request);
     connect(reply, &QNetworkReply::finished,

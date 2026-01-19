@@ -21,8 +21,8 @@ void TestUpdateChecker::testVersionComparison()
     // 测试版本比较逻辑
     // 我们通过创建 UpdateChecker 实例来测试，但不触发网络请求
     
-    UpdateChecker checker1("0.1.0", "183965983", "AutoBrightnessWidget");
-    UpdateChecker checker2("1.0.0", "183965983", "AutoBrightnessWidget");
+    UpdateChecker checker1(APP_VERSION, GITHUB_OWNER, GITHUB_REPO);
+    UpdateChecker checker2("1.0.0", GITHUB_OWNER, GITHUB_REPO);
     
     // 由于 compareVersions 是私有方法，我们无法直接测试
     // 但可以验证对象创建成功
@@ -35,7 +35,7 @@ void TestUpdateChecker::testUpdateCheck()
     // 注意：这个测试需要网络连接，在 CI 环境中可能会失败
     // 如果 GitHub API 无响应或仓库没有 release，测试会失败
     
-    UpdateChecker checker("0.1.0", "183965983", "AutoBrightnessWidget");
+    UpdateChecker checker(APP_VERSION, GITHUB_OWNER, GITHUB_REPO);
     
     // 设置信号监听
     QSignalSpy updateAvailableSpy(&checker, &UpdateChecker::updateAvailable);
