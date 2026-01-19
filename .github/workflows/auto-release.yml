@@ -62,6 +62,41 @@ jobs:
         echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
       shell: pwsh
     
+    - name: Configure CMake
+      run: |
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR" -DBUILD_TESTS=ON
+      shell: pwsh
+    
+    - name: Build
+      run: |
+        cd build
+        cmake --build . --config Release
+      shell: pwsh
+    
+    - name: Prepare artifacts
+      run: |
+        mkdir artifacts
+        Copy-Item build/Release/*.exe artifacts/ -ErrorAction SilentlyContinue
+        Copy-Item build/Release/*.dll artifacts/ -ErrorAction SilentlyContinue
+        
+        if (-not (Test-Path "artifacts/AutoBrightnessWidget.exe")) {
+            Write-Error "Main executable not found"
+            exit 1
+        }
+        
+        Write-Host "Build artifacts prepared successfully"
+      shell: pwsh
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: artifacts/*
+        if-no-files-found: error
+        retention-days: 90
+    
     - name: Package OpenCV DLLs for reuse
       run: |
         mkdir opencv-dlls
