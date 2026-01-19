@@ -380,9 +380,10 @@ jobs:
             }
         }
         
-        # Generate build date version for pre-release
+        # Generate build date version for pre-release (match the format in release job)
         $buildDate = Get-Date -Format "yyyyMMdd"
-        $fullVersion = "${version}.${buildDate}"
+        $shortSha = git rev-parse --short HEAD
+        $fullVersion = "${version}-pre.${buildDate}.${shortSha}"
         
         # Read template and replace version placeholder
         $templateContent = Get-Content "installer-script.iss.template" -Raw
@@ -476,7 +477,7 @@ jobs:
           echo "Found merge commit: ${MERGE_COMMIT}"
           MERGE_MESSAGE=$(git log -1 --pretty=format:"%s" ${MERGE_COMMIT})
           MERGE_BODY=$(git log -1 --pretty=format:"%b" ${MERGE_COMMIT})
-          PR_NUMBER=$(echo "$MERGE_MESSAGE" | grep -oP '#\K\d+' || echo "")
+          PR_NUMBER=$(echo "$MERGE_MESSAGE" | grep -o '#[0-9]\+' | head -1 | sed 's/#//' || echo "")
           
           # Generate release notes with merge information
           cat > release_notes.md << EOF
