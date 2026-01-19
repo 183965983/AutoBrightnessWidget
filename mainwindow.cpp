@@ -8,6 +8,8 @@
 #include <QPixmap>
 #include <QPainter>
 #include <QIcon>
+#include <QLabel>
+#include <QTime>
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
@@ -25,12 +27,22 @@ MainWindow::MainWindow(QWidget *parent)
     , m_autoBrightThread(nullptr)
     , m_trayIcon(nullptr)
     , m_trayMenu(nullptr)
+    , m_startAction(nullptr)
+    , m_stopAction(nullptr)
     , m_minimizeToTray(false)
+    , m_statusLabel(nullptr)
+    , m_lastUpdateLabel(nullptr)
 {
     ui->setupUi(this);
     
     // 设置窗口标题
     setWindowTitle("Auto Brightness Widget");
+    
+    // 设置状态栏
+    m_statusLabel = new QLabel("状态: 已停止", this);
+    m_lastUpdateLabel = new QLabel("最后更新: --", this);
+    ui->statusbar->addWidget(m_statusLabel);
+    ui->statusbar->addPermanentWidget(m_lastUpdateLabel);
     
     // 连接信号槽
     connect(m_autoBrightness, &AutoBrightness::cameraBrightnessChanged,
@@ -54,6 +66,9 @@ MainWindow::MainWindow(QWidget *parent)
     // 初始化显示
     updateCameraBrightness(0);
     updateScreenBrightness(0);
+    
+    // 初始化按钮状态
+    updateButtonStates();
 }
 
 MainWindow::~MainWindow()
@@ -96,6 +111,9 @@ void MainWindow::on_pushButton_clicked()
     }
     
     m_running = true;
+    updateStatusBar();
+    updateButtonStates();
+    
     m_autoBrightThread = QThread::create(
         [this](){
             AutoBrightness::getInstance()->openCap();
@@ -106,6 +124,9 @@ void MainWindow::on_pushButton_clicked()
             AutoBrightness::getInstance()->releaseCap();
         });
     m_autoBrightThread->start();
+    
+    // 更新托盘菜单状态
+    updateTrayMenu();
 
 }
 
@@ -113,11 +134,17 @@ void MainWindow::on_pushButton_clicked()
 void MainWindow::on_pushButton_2_clicked()
 {
     m_running = false;
+    updateStatusBar();
+    updateButtonStates();
+    
     if(m_autoBrightThread){
         m_autoBrightThread->wait();
         delete m_autoBrightThread;
         m_autoBrightThread = nullptr;
     }
+    
+    // 更新托盘菜单状态
+    updateTrayMenu();
 
 }
 
@@ -239,6 +266,11 @@ void MainWindow::updateCameraBrightness(int brightness)
     int grayValue = static_cast<int>(brightness * 255.0 / 100.0);
     QString styleSheet = QString("background-color: rgb(%1, %1, %1);").arg(grayValue);
     ui->cameraBrightnessBlock->setStyleSheet(styleSheet);
+    
+    // 更新状态栏的最后更新时间
+    if (m_running) {
+        updateLastUpdateTime();
+    }
 }
 
 void MainWindow::updateScreenBrightness(int brightness)
@@ -266,17 +298,32 @@ void MainWindow::setupSystemTray()
     // 设置自定义图标
     m_trayIcon->setIcon(createTrayIcon());
     
+    // 设置工具提示
+    m_trayIcon->setToolTip("Auto Brightness Widget - 自动亮度调节工具");
+    
     // 创建托盘菜单
     m_trayMenu = new QMenu(this);
+    
+    // 添加启动和停止菜单项
+    m_startAction = m_trayMenu->addAction("启动");
+    m_stopAction = m_trayMenu->addAction("停止");
+    m_trayMenu->addSeparator();
+    
     QAction *showAction = m_trayMenu->addAction("显示窗口");
     QAction *quitAction = m_trayMenu->addAction("退出");
     
+    // 连接信号槽
+    connect(m_startAction, &QAction::triggered, this, &MainWindow::startFromTray);
+    connect(m_stopAction, &QAction::triggered, this, &MainWindow::stopFromTray);
     connect(showAction, &QAction::triggered, this, &MainWindow::showWindowFromTray);
     connect(quitAction, &QAction::triggered, this, &MainWindow::quitApplication);
     connect(m_trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::onTrayIconActivated);
     
     m_trayIcon->setContextMenu(m_trayMenu);
     m_trayIcon->show();
+    
+    // 初始化菜单状态
+    updateTrayMenu();
 }
 
 QIcon MainWindow::createTrayIcon()
@@ -331,6 +378,31 @@ void MainWindow::showWindowFromTray()
     activateWindow();
 }
 
+void MainWindow::startFromTray()
+{
+    if (!m_running) {
+        on_pushButton_clicked();  // 调用现有的启动逻辑
+        // updateTrayMenu() 已在 on_pushButton_clicked() 中调用
+    }
+}
+
+void MainWindow::stopFromTray()
+{
+    if (m_running) {
+        on_pushButton_2_clicked();  // 调用现有的停止逻辑
+        // updateTrayMenu() 已在 on_pushButton_2_clicked() 中调用
+    }
+}
+
+void MainWindow::updateTrayMenu()
+{
+    // 根据运行状态更新菜单项的启用状态
+    if (m_startAction && m_stopAction) {
+        m_startAction->setEnabled(!m_running);
+        m_stopAction->setEnabled(m_running);
+    }
+}
+
 void MainWindow::quitApplication()
 {
     m_running = false;
@@ -371,4 +443,51 @@ bool MainWindow::isAutoStartEnabled()
     return false;
 #endif
 }
+
+void MainWindow::updateStatusBar()
+{
+    if (!m_statusLabel || !m_lastUpdateLabel) {
+        return;
+    }
+    
+    if (m_running) {
+        m_statusLabel->setText("状态: 正在运行");
+        updateLastUpdateTime();
+    } else {
+        m_statusLabel->setText("状态: 已停止");
+        m_lastUpdateLabel->setText("最后更新: --");
+    }
+}
+
+void MainWindow::updateLastUpdateTime()
+{
+    if (!m_lastUpdateLabel) {
+        return;
+    }
+    
+    QTime currentTime = QTime::currentTime();
+    m_lastUpdateLabel->setText(QString("最后更新: %1").arg(currentTime.toString("HH:mm:ss")));
+}
+
+void MainWindow::updateButtonStates()
+{
+    // 更新启动按钮
+    if (m_running) {
+        ui->pushButton->setEnabled(false);
+        ui->pushButton->setToolTip("自动亮度调节正在运行中");
+    } else {
+        ui->pushButton->setEnabled(true);
+        ui->pushButton->setToolTip("点击启动自动亮度调节");
+    }
+    
+    // 更新停止按钮
+    if (m_running) {
+        ui->pushButton_2->setEnabled(true);
+        ui->pushButton_2->setToolTip("点击停止自动亮度调节");
+    } else {
+        ui->pushButton_2->setEnabled(false);
+        ui->pushButton_2->setToolTip("自动亮度调节未运行");
+    }
+}
+
 

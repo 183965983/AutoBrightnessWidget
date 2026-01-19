@@ -6,12 +6,14 @@ class TestBrightness;
 class TestUI;
 class TestNewFeatures;
 class TestMultiMonitor;
+class TestStatusBar;
 
 // External test class declarations (defined in their respective .cpp files)
 extern QObject* createTestBrightnessInstance();
 extern QObject* createTestUIInstance();
 extern QObject* createTestNewFeaturesInstance();
 extern QObject* createTestMultiMonitorInstance();
+extern QObject* createTestStatusBarInstance();
 
 int main(int argc, char *argv[])
 {
@@ -43,6 +45,13 @@ int main(int argc, char *argv[])
     // Run multi-monitor tests
     {
         QObject* tc = createTestMultiMonitorInstance();
+        status |= QTest::qExec(tc, argc, argv);
+        delete tc;
+    }
+    
+    // Run status bar tests
+    {
+        QObject* tc = createTestStatusBarInstance();
         status |= QTest::qExec(tc, argc, argv);
         delete tc;
     }

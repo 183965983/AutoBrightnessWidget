@@ -77,3 +77,6 @@ CMakeLists.txt.user*
 
 *.vsidx
 mainwindow.ui.bak
+
+# CodeQL build artifacts
+_codeql_build_dir/

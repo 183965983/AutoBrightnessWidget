@@ -1,0 +1,49 @@
+; AutoBrightnessWidget Installer Script
+#define MyAppName "AutoBrightnessWidget"
+#define MyAppVersion "{{VERSION}}"
+#define MyAppPublisher "183965983"
+#define MyAppURL "https://github.com/183965983/AutoBrightnessWidget"
+#define MyAppExeName "AutoBrightnessWidget.exe"
+
+[Setup]
+; AppId 是 AutoBrightnessWidget 安装包的项目专用 GUID。
+; 使用 uuidgen 生成一次并固定在此处，请勿在其他应用中复用，也不要随意修改。
+AppId={{8F9E5C4D-2A3B-4E7F-9D8C-1B6A5E4F3C2D}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+AppPublisherURL={#MyAppURL}
+AppSupportURL={#MyAppURL}
+AppUpdatesURL={#MyAppURL}
+DefaultDirName={autopf}\{#MyAppName}
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+; LicenseFile not specified; no license agreement is shown during setup
+OutputDir=.
+OutputBaseFilename=AutoBrightnessWidget-Setup-Windows-x64
+; SetupIconFile not specified; default installer icon will be used
+Compression=lzma2/max
+SolidCompression=yes
+WizardStyle=modern
+ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64
+PrivilegesRequired=admin
+PrivilegesRequiredOverridesAllowed=dialog
+
+[Languages]
+Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+Source: "installer-files\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+[Icons]
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
