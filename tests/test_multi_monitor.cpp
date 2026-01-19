@@ -182,5 +182,9 @@ private slots:
     }
 };
 
-QTEST_MAIN(TestMultiMonitor)
+// Factory function for test_main.cpp
+QObject* createTestMultiMonitorInstance() {
+    return new TestMultiMonitor();
+}
+
 #include "test_multi_monitor.moc"
