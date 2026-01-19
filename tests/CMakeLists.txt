@@ -6,6 +6,7 @@ set(TEST_SOURCES
     test_brightness.cpp
     test_ui.cpp
     test_new_features.cpp
+    test_update_checker.cpp
     test_status_bar.cpp
     MockCamera.cpp
     MockCamera.h
@@ -20,6 +21,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
+        ../UpdateChecker.cpp
+        ../UpdateChecker.h
+        ../UpdateDialog.cpp
+        ../UpdateDialog.h
         ../mainwindow.cpp
         ../mainwindow.h
         ../mainwindow.ui
@@ -33,6 +38,10 @@ else()
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
+        ../UpdateChecker.cpp
+        ../UpdateChecker.h
+        ../UpdateDialog.cpp
+        ../UpdateDialog.h
         ../mainwindow.cpp
         ../mainwindow.h
     )
@@ -41,6 +50,7 @@ endif()
 target_link_libraries(AutoBrightnessWidgetTests PRIVATE 
     Qt${QT_VERSION_MAJOR}::Widgets 
     Qt${QT_VERSION_MAJOR}::Test
+    Qt${QT_VERSION_MAJOR}::Network
     ${OpenCV_LIBS}
 )
 
