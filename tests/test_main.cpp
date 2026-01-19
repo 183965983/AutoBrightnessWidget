@@ -47,6 +47,10 @@ int main(int argc, char *argv[])
     // Run multi-monitor tests
     {
         QObject* tc = createTestMultiMonitorInstance();
+        status |= QTest::qExec(tc, argc, argv);
+        delete tc;
+    }
+    
     // Run update checker tests
     {
         QObject* tc = createTestUpdateCheckerInstance();
