@@ -24,6 +24,8 @@ MainWindow::MainWindow(QWidget *parent)
     , m_autoBrightThread(nullptr)
     , m_trayIcon(nullptr)
     , m_trayMenu(nullptr)
+    , m_startAction(nullptr)
+    , m_stopAction(nullptr)
     , m_minimizeToTray(false)
 {
     ui->setupUi(this);
@@ -90,6 +92,9 @@ void MainWindow::on_pushButton_clicked()
             AutoBrightness::getInstance()->releaseCap();
         });
     m_autoBrightThread->start();
+    
+    // 更新托盘菜单状态
+    updateTrayMenu();
 
 }
 
@@ -102,6 +107,9 @@ void MainWindow::on_pushButton_2_clicked()
         delete m_autoBrightThread;
         m_autoBrightThread = nullptr;
     }
+    
+    // 更新托盘菜单状态
+    updateTrayMenu();
 
 }
 
@@ -244,17 +252,32 @@ void MainWindow::setupSystemTray()
     // 设置自定义图标
     m_trayIcon->setIcon(createTrayIcon());
     
+    // 设置工具提示
+    m_trayIcon->setToolTip("Auto Brightness Widget - 自动亮度调节工具");
+    
     // 创建托盘菜单
     m_trayMenu = new QMenu(this);
+    
+    // 添加启动和停止菜单项
+    m_startAction = m_trayMenu->addAction("启动");
+    m_stopAction = m_trayMenu->addAction("停止");
+    m_trayMenu->addSeparator();
+    
     QAction *showAction = m_trayMenu->addAction("显示窗口");
     QAction *quitAction = m_trayMenu->addAction("退出");
     
+    // 连接信号槽
+    connect(m_startAction, &QAction::triggered, this, &MainWindow::startFromTray);
+    connect(m_stopAction, &QAction::triggered, this, &MainWindow::stopFromTray);
     connect(showAction, &QAction::triggered, this, &MainWindow::showWindowFromTray);
     connect(quitAction, &QAction::triggered, this, &MainWindow::quitApplication);
     connect(m_trayIcon, &QSystemTrayIcon::activated, this, &MainWindow::onTrayIconActivated);
     
     m_trayIcon->setContextMenu(m_trayMenu);
     m_trayIcon->show();
+    
+    // 初始化菜单状态
+    updateTrayMenu();
 }
 
 QIcon MainWindow::createTrayIcon()
@@ -307,6 +330,31 @@ void MainWindow::showWindowFromTray()
     show();
     raise();
     activateWindow();
+}
+
+void MainWindow::startFromTray()
+{
+    if (!m_running) {
+        on_pushButton_clicked();  // 调用现有的启动逻辑
+        // updateTrayMenu() 已在 on_pushButton_clicked() 中调用
+    }
+}
+
+void MainWindow::stopFromTray()
+{
+    if (m_running) {
+        on_pushButton_2_clicked();  // 调用现有的停止逻辑
+        // updateTrayMenu() 已在 on_pushButton_2_clicked() 中调用
+    }
+}
+
+void MainWindow::updateTrayMenu()
+{
+    // 根据运行状态更新菜单项的启用状态
+    if (m_startAction && m_stopAction) {
+        m_startAction->setEnabled(!m_running);
+        m_stopAction->setEnabled(m_running);
+    }
 }
 
 void MainWindow::quitApplication()
