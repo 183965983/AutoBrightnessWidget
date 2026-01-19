@@ -57,6 +57,7 @@ A Qt-based desktop application for automatic screen brightness adjustment using 
 - 🎨 Qt 图形界面，操作简单直观 / Qt-based graphical user interface
 - 💻 跨平台支持（主要支持 Windows）/ Cross-platform support (Windows focus)
 - 📦 提供安装包和便携版两种分发形式 / Available as installer and portable version
+- 🔄 自动更新检查器：启动时检查新版本并通知用户 / Auto-update checker: Checks for new releases on startup and notifies users
 
 ### 多显示器支持（新功能！）/ Multi-Monitor Support (New!)
 
@@ -188,6 +189,20 @@ The release workflow will automatically build and package the application with a
 4. 屏幕亮度会根据光线条件自动调整 / Screen brightness will be adjusted automatically based on lighting conditions
 5. 点击"停止"按钮禁用自动调节 / Click stop to disable automatic adjustment
 
+### Auto-Update Feature
+
+The application automatically checks for updates when launched:
+- If a new version is available, a dialog will appear with the update details
+- Click "下载新版本" to visit the release page and download the latest version
+- Click "暂不更新" to skip the update and continue using the current version
+- The update check happens in the background and won't block the application startup
+
+1. 启动应用程序 / Launch the application
+2. 点击"开始"按钮启用自动亮度调节 / Click the start button to begin automatic brightness adjustment
+3. 程序将使用摄像头检测环境光线 / The application will use your webcam to detect ambient light
+4. 屏幕亮度会根据光线条件自动调整 / Screen brightness will be adjusted automatically based on lighting conditions
+5. 点击"停止"按钮禁用自动调节 / Click stop to disable automatic adjustment
+
 ## Project Structure
 
 ```
@@ -210,6 +225,11 @@ AutoBrightnessWidget/
   - Brightness calculation from video frames
   - System brightness adjustment
   - Threading for continuous monitoring
+- **UpdateChecker**: Handles automatic update checks:
+  - Queries GitHub API for latest releases
+  - Compares version numbers
+  - Notifies when updates are available
+- **UpdateDialog**: Displays update notifications with release information
 
 ## Contributing
 

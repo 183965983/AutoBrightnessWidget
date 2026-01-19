@@ -51,6 +51,13 @@ private slots:
     void quitApplication();
     void startFromTray();
     void stopFromTray();
+    
+    // 更新检查槽
+    void onUpdateAvailable(const QString& latestVersion,
+                          const QString& releaseUrl,
+                          const QString& releaseNotes);
+    void onNoUpdateAvailable();
+    void onUpdateCheckFailed(const QString& errorMessage);
 
 private:
     void setupSystemTray();
@@ -61,6 +68,7 @@ private:
     void updateButtonStates();
     void updateLastUpdateTime();
     void updateTrayMenu();  // 更新托盘菜单状态
+    void checkForUpdates();
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;

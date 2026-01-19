@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(AutoBrightnessWidget VERSION 0.1 LANGUAGES CXX)
+project(AutoBrightnessWidget VERSION 0.1.0 LANGUAGES CXX)
+
+# 定义版本字符串用于代码中使用
+add_compile_definitions(APP_VERSION="${PROJECT_VERSION}")
+add_compile_definitions(GITHUB_OWNER="183965983")
+add_compile_definitions(GITHUB_REPO="AutoBrightnessWidget")
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -9,8 +14,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Test)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Test)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Test Network)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Test Network)
 
 
 # 设置 OpenCV 路径
@@ -32,6 +37,8 @@ set(PROJECT_SOURCES
         CurveEditorWidget.cpp
         CurveEditorDialog.cpp
         MonitorConfigDialog.cpp
+        UpdateChecker.cpp
+        UpdateDialog.cpp
         mainwindow.h
         mainwindow.ui
 )
@@ -44,6 +51,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         CurveEditorWidget.h
         CurveEditorDialog.h
         MonitorConfigDialog.h
+        UpdateChecker.h
+        UpdateDialog.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET AutoBrightnessWidget APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -69,7 +78,7 @@ else()
     # qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_link_libraries(AutoBrightnessWidget PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ${OpenCV_LIBS})
+target_link_libraries(AutoBrightnessWidget PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Network ${OpenCV_LIBS})
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
