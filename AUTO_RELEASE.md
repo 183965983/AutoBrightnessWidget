@@ -201,7 +201,7 @@ git push origin v0.1.0
 ### 运行环境 / Runtime Environment
 - Windows 10/11 (64位)
 - 带摄像头的设备
-- Visual C++ 运行库（安装包版本会自动安装）
+- Visual C++ 运行库（安装包已包含所需 DLL）
 
 ## 故障排查 / Troubleshooting
 

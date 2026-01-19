@@ -18,7 +18,7 @@ A Qt-based desktop application for automatic screen brightness adjustment using 
 - **[下载安装程序](https://github.com/183965983/AutoBrightnessWidget/releases)** (`AutoBrightnessWidget-Setup-Windows-x64.exe`)
 - ✅ 完整的安装向导，自动配置所有组件
 - ✅ 创建桌面快捷方式和开始菜单项
-- ✅ 自动安装 Visual C++ 运行库
+- ✅ 包含所有必需的运行时依赖库
 - ✅ 支持一键卸载
 - 📌 适合大多数用户
 
@@ -58,7 +58,7 @@ A Qt-based desktop application for automatic screen brightness adjustment using 
 ### 运行要求 / Runtime Requirements
 - **操作系统 / OS**: Windows 10/11 (64位)
 - **硬件 / Hardware**: 带摄像头的设备 / Device with webcam
-- **运行库 / Runtime**: Visual C++ 运行库（安装包版本会自动安装）/ Visual C++ runtime (auto-installed with installer version)
+- **运行库 / Runtime**: Visual C++ 运行库（安装包已包含所需 DLL）/ Visual C++ runtime (installer includes required DLLs)
 
 ### 开发依赖 / Development Dependencies
 

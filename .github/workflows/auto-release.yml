@@ -62,40 +62,40 @@ jobs:
         echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
       shell: pwsh
     
-    - name: Configure CMake
+    - name: Package OpenCV DLLs for reuse
       run: |
-        mkdir build
-        cd build
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DOpenCV_DIR="$env:OpenCV_DIR" -DBUILD_TESTS=OFF
-      shell: pwsh
-    
-    - name: Build
-      run: |
-        cd build
-        cmake --build . --config Release
-      shell: pwsh
-    
-    - name: Prepare artifacts
-      run: |
-        mkdir artifacts
-        Copy-Item build/Release/*.exe artifacts/ -ErrorAction SilentlyContinue
-        Copy-Item build/Release/*.dll artifacts/ -ErrorAction SilentlyContinue
+        mkdir opencv-dlls
         
-        if (-not (Test-Path "artifacts/AutoBrightnessWidget.exe")) {
-            Write-Error "Main executable not found"
+        $opencvX64Path = "$env:GITHUB_WORKSPACE\opencv\build\x64"
+        $vcDirs = Get-ChildItem -Path $opencvX64Path -Directory | Where-Object { $_.Name -match "^vc\d+$" }
+        
+        if ($vcDirs.Count -eq 0) {
+            Write-Error "No VC directory found in $opencvX64Path"
             exit 1
         }
         
-        Write-Host "Build artifacts prepared successfully"
+        $vcDir = $vcDirs[0]
+        $opencvBinPath = Join-Path $vcDir.FullName "bin"
+        
+        $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
+        if ($opencvDlls.Count -eq 0) {
+            Write-Error "No OpenCV DLLs found in $opencvBinPath"
+            exit 1
+        }
+        
+        Write-Host "Packaging OpenCV DLLs for reuse..."
+        $opencvDlls | Copy-Item -Destination opencv-dlls/
+        
+        Write-Host "OpenCV DLLs packaged successfully"
       shell: pwsh
     
-    - name: Upload build artifacts
+    - name: Upload OpenCV DLLs
       uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts
-        path: artifacts/*
+        name: opencv-dlls
+        path: opencv-dlls/*
         if-no-files-found: error
-        retention-days: 90
+        retention-days: 1
   
   package-portable:
     needs: build
@@ -114,44 +114,18 @@ jobs:
         name: build-artifacts
         path: build-artifacts
     
+    - name: Download OpenCV DLLs
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: opencv-dlls
+        path: opencv-dlls
+    
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.5.0'
         arch: 'win64_msvc2019_64'
         cache: true
-    
-    - name: Install OpenCV
-      run: |
-        $opencvVersion = "4.10.0"
-        $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
-        $opencvInstaller = "opencv-installer.exe"
-        
-        Write-Host "Downloading OpenCV ${opencvVersion}..."
-        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
-        
-        Write-Host "Extracting OpenCV..."
-        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
-        
-        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
-            Write-Error "OpenCV extraction failed"
-            exit 1
-        }
-        
-        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
-            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
-        } else {
-            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
-        }
-        
-        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
-            Write-Error "OpenCV build directory not found after extraction"
-            exit 1
-        }
-        
-        echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
-        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
-      shell: pwsh
     
     - name: Package portable application
       run: |
@@ -188,35 +162,14 @@ jobs:
             exit 1
         }
         
-        # Copy OpenCV DLLs
-        $opencvX64Path = "$env:GITHUB_WORKSPACE\opencv\build\x64"
-        if (-not (Test-Path $opencvX64Path)) {
-            Write-Error "OpenCV x64 directory not found at $opencvX64Path"
+        # Copy OpenCV DLLs from artifacts
+        if (-not (Test-Path "opencv-dlls")) {
+            Write-Error "OpenCV DLLs directory not found"
             exit 1
         }
         
-        $vcDirs = Get-ChildItem -Path $opencvX64Path -Directory | Where-Object { $_.Name -match "^vc\d+$" }
-        if ($vcDirs.Count -eq 0) {
-            Write-Error "No VC directory found in $opencvX64Path"
-            exit 1
-        }
-        
-        $vcDir = $vcDirs[0]
-        $opencvBinPath = Join-Path $vcDir.FullName "bin"
-        Write-Host "Using OpenCV bin path: $opencvBinPath"
-        
-        if (-not (Test-Path $opencvBinPath)) {
-            Write-Error "OpenCV bin directory not found at $opencvBinPath"
-            exit 1
-        }
-        
-        $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
-        if ($opencvDlls.Count -eq 0) {
-            Write-Error "No OpenCV DLLs found in $opencvBinPath"
-            exit 1
-        }
-        Write-Host "Copying OpenCV DLLs..."
-        $opencvDlls | Copy-Item -Destination release-portable/
+        Write-Host "Copying OpenCV DLLs from artifacts..."
+        Copy-Item opencv-dlls/*.dll release-portable/
         
         # Create zip archive
         Write-Host "Creating portable archive..."
@@ -253,44 +206,18 @@ jobs:
         name: build-artifacts
         path: build-artifacts
     
+    - name: Download OpenCV DLLs
+      uses: actions/download-artifact@v4.1.3
+      with:
+        name: opencv-dlls
+        path: opencv-dlls
+    
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.5.0'
         arch: 'win64_msvc2019_64'
         cache: true
-    
-    - name: Install OpenCV
-      run: |
-        $opencvVersion = "4.10.0"
-        $opencvUrl = "https://github.com/opencv/opencv/releases/download/${opencvVersion}/opencv-${opencvVersion}-windows.exe"
-        $opencvInstaller = "opencv-installer.exe"
-        
-        Write-Host "Downloading OpenCV ${opencvVersion}..."
-        Invoke-WebRequest -Uri $opencvUrl -OutFile $opencvInstaller -UseBasicParsing
-        
-        Write-Host "Extracting OpenCV..."
-        Start-Process -FilePath $opencvInstaller -ArgumentList "-o$env:GITHUB_WORKSPACE\opencv-temp", "-y" -Wait -NoNewWindow
-        
-        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp")) {
-            Write-Error "OpenCV extraction failed"
-            exit 1
-        }
-        
-        if (Test-Path "$env:GITHUB_WORKSPACE\opencv-temp\opencv") {
-            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp\opencv" "$env:GITHUB_WORKSPACE\opencv"
-        } else {
-            Move-Item "$env:GITHUB_WORKSPACE\opencv-temp" "$env:GITHUB_WORKSPACE\opencv"
-        }
-        
-        if (-not (Test-Path "$env:GITHUB_WORKSPACE\opencv\build")) {
-            Write-Error "OpenCV build directory not found after extraction"
-            exit 1
-        }
-        
-        echo "OpenCV_DIR=$env:GITHUB_WORKSPACE\opencv\build" >> $env:GITHUB_ENV
-        echo "$env:GITHUB_WORKSPACE\opencv\build\x64\vc17\bin" >> $env:GITHUB_PATH
-      shell: pwsh
     
     - name: Prepare installer files
       run: |
@@ -319,35 +246,14 @@ jobs:
             exit 1
         }
         
-        # Copy OpenCV DLLs
-        $opencvX64Path = "$env:GITHUB_WORKSPACE\opencv\build\x64"
-        if (-not (Test-Path $opencvX64Path)) {
-            Write-Error "OpenCV x64 directory not found at $opencvX64Path"
+        # Copy OpenCV DLLs from artifacts
+        if (-not (Test-Path "opencv-dlls")) {
+            Write-Error "OpenCV DLLs directory not found"
             exit 1
         }
         
-        $vcDirs = Get-ChildItem -Path $opencvX64Path -Directory | Where-Object { $_.Name -match "^vc\d+$" }
-        if ($vcDirs.Count -eq 0) {
-            Write-Error "No VC directory found in $opencvX64Path"
-            exit 1
-        }
-        
-        $vcDir = $vcDirs[0]
-        $opencvBinPath = Join-Path $vcDir.FullName "bin"
-        Write-Host "Using OpenCV bin path: $opencvBinPath"
-        
-        if (-not (Test-Path $opencvBinPath)) {
-            Write-Error "OpenCV bin directory not found at $opencvBinPath"
-            exit 1
-        }
-        
-        $opencvDlls = Get-ChildItem "$opencvBinPath\opencv_world*.dll"
-        if ($opencvDlls.Count -eq 0) {
-            Write-Error "No OpenCV DLLs found in $opencvBinPath"
-            exit 1
-        }
-        Write-Host "Copying OpenCV DLLs..."
-        $opencvDlls | Copy-Item -Destination installer-files/
+        Write-Host "Copying OpenCV DLLs from artifacts..."
+        Copy-Item opencv-dlls/*.dll installer-files/
         
         Write-Host "Installer files prepared successfully"
         
@@ -357,16 +263,24 @@ jobs:
     
     - name: Install Inno Setup
       run: |
-        Write-Host "Downloading Inno Setup..."
-        $innoSetupUrl = "https://jrsoftware.org/download.php/is.exe"
-        $innoSetupInstaller = "innosetup-installer.exe"
+        Write-Host "Installing Inno Setup via Chocolatey..."
         
-        Invoke-WebRequest -Uri $innoSetupUrl -OutFile $innoSetupInstaller -UseBasicParsing
+        # Ensure Chocolatey is available (it is pre-installed on GitHub-hosted Windows runners)
+        if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
+          Write-Error "Chocolatey is not available on this runner."
+          exit 1
+        }
         
-        Write-Host "Installing Inno Setup..."
-        Start-Process -FilePath $innoSetupInstaller -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/SP-" -Wait -NoNewWindow
+        # Install a specific Inno Setup version for reproducible builds
+        $innoVersion = "6.2.2"
+        choco install innosetup --version=$innoVersion --yes --no-progress
         
-        Write-Host "Inno Setup installed successfully"
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Inno Setup installation failed with exit code $LASTEXITCODE"
+          exit 1
+        }
+        
+        Write-Host "Inno Setup installed successfully via Chocolatey (version $innoVersion)"
       shell: pwsh
     
     - name: Create Inno Setup script
@@ -398,12 +312,36 @@ jobs:
     
     - name: Build installer
       run: |
-        # Find Inno Setup compiler
-        $isccPath = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
-        if (-not (Test-Path $isccPath)) {
-            Write-Error "Inno Setup compiler not found at $isccPath"
+        # Find Inno Setup compiler dynamically
+        $isccPath = $null
+        
+        # First, try to locate ISCC.exe via PATH
+        $isccCommand = Get-Command "iscc.exe" -ErrorAction SilentlyContinue
+        if ($isccCommand) {
+            $isccPath = $isccCommand.Source
+        } else {
+            # Fallback: check common installation paths
+            $possiblePaths = @(
+                Join-Path "${env:ProgramFiles(x86)}" "Inno Setup 6\ISCC.exe",
+                Join-Path "${env:ProgramFiles(x86)}" "Inno Setup 5\ISCC.exe",
+                Join-Path "${env:ProgramFiles}" "Inno Setup 6\ISCC.exe",
+                Join-Path "${env:ProgramFiles}" "Inno Setup 5\ISCC.exe"
+            )
+        
+            foreach ($path in $possiblePaths) {
+                if ($path -and (Test-Path $path)) {
+                    $isccPath = $path
+                    break
+                }
+            }
+        }
+        
+        if (-not $isccPath -or -not (Test-Path $isccPath)) {
+            Write-Error "Inno Setup compiler (ISCC.exe) not found. Ensure Inno Setup is installed and ISCC.exe is in PATH or in a standard install location."
             exit 1
         }
+        
+        Write-Host "Using Inno Setup compiler at: $isccPath"
         
         Write-Host "Building installer..."
         & $isccPath "installer-script.iss"
@@ -463,7 +401,6 @@ jobs:
       run: |
         # Generate version based on date and commit
         BUILD_DATE=$(date +%Y%m%d)
-        BUILD_TIME=$(date +%H%M%S)
         SHORT_SHA=$(git rev-parse --short HEAD)
         VERSION="v0.1.0-pre.${BUILD_DATE}.${SHORT_SHA}"
         
@@ -477,6 +414,7 @@ jobs:
           echo "Found merge commit: ${MERGE_COMMIT}"
           MERGE_MESSAGE=$(git log -1 --pretty=format:"%s" ${MERGE_COMMIT})
           MERGE_BODY=$(git log -1 --pretty=format:"%b" ${MERGE_COMMIT})
+          # 使用 grep + sed 而不是 grep -P，避免依赖 Perl 正则以提高在不同运行环境中的兼容性
           PR_NUMBER=$(echo "$MERGE_MESSAGE" | grep -o '#[0-9]\+' | head -1 | sed 's/#//' || echo "")
           
           # Generate release notes with merge information
