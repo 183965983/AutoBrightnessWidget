@@ -4,6 +4,7 @@
 #include <QNetworkRequest>
 #include <QUrl>
 #include <QDebug>
+#include <algorithm>
 
 UpdateChecker::UpdateChecker(const QString& currentVersion,
                            const QString& owner,

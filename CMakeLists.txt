@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(AutoBrightnessWidget VERSION 0.1 LANGUAGES CXX)
+project(AutoBrightnessWidget VERSION 0.1.0 LANGUAGES CXX)
+
+# 定义版本字符串用于代码中使用
+add_compile_definitions(APP_VERSION="${PROJECT_VERSION}")
+add_compile_definitions(GITHUB_OWNER="183965983")
+add_compile_definitions(GITHUB_REPO="AutoBrightnessWidget")
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)

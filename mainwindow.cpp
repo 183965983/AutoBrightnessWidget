@@ -359,10 +359,11 @@ bool MainWindow::isAutoStartEnabled()
 void MainWindow::checkForUpdates()
 {
     // 创建更新检查器
+    // 使用 CMakeLists.txt 中定义的版本号和仓库信息
     UpdateChecker* updateChecker = new UpdateChecker(
-        "0.1.0",  // 当前版本，应与 CMakeLists.txt 保持一致
-        "183965983",
-        "AutoBrightnessWidget",
+        APP_VERSION,
+        GITHUB_OWNER,
+        GITHUB_REPO,
         this
     );
     
@@ -383,7 +384,7 @@ void MainWindow::onUpdateAvailable(const QString& latestVersion,
                                    const QString& releaseNotes)
 {
     // 显示更新对话框
-    UpdateDialog dialog("0.1.0", latestVersion, releaseUrl, releaseNotes, this);
+    UpdateDialog dialog(APP_VERSION, latestVersion, releaseUrl, releaseNotes, this);
     dialog.exec();
 }
 
