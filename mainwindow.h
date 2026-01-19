@@ -5,6 +5,7 @@
 #include <QSystemTrayIcon>
 #include <QMenu>
 #include <QCloseEvent>
+#include <QLabel>
 #include "AutoBrightness.h"
 
 QT_BEGIN_NAMESPACE

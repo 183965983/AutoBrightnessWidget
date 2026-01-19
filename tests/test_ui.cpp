@@ -69,11 +69,9 @@ private slots:
         QVERIFY(startButton != nullptr);
         QVERIFY(stopButton != nullptr);
         
-        // Note: We don't actually click the start button here because
-        // it would try to access the camera. Instead we just verify
-        // the buttons are accessible and enabled.
+        // Initially, start button should be enabled and stop button disabled
         QVERIFY(startButton->isEnabled());
-        QVERIFY(stopButton->isEnabled());
+        QVERIFY(!stopButton->isEnabled());
         
         window.hide();
         qDebug() << "Button interaction test passed";
