@@ -376,6 +376,10 @@ bool MainWindow::isAutoStartEnabled()
 
 void MainWindow::updateStatusBar()
 {
+    if (!m_statusLabel || !m_lastUpdateLabel) {
+        return;
+    }
+    
     if (m_running) {
         m_statusLabel->setText("状态: 正在运行");
         updateLastUpdateTime();
@@ -387,6 +391,10 @@ void MainWindow::updateStatusBar()
 
 void MainWindow::updateLastUpdateTime()
 {
+    if (!m_lastUpdateLabel) {
+        return;
+    }
+    
     QTime currentTime = QTime::currentTime();
     m_lastUpdateLabel->setText(QString("最后更新: %1").arg(currentTime.toString("HH:mm:ss")));
 }
