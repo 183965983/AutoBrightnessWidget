@@ -71,5 +71,9 @@ void TestUpdateChecker::testUpdateCheck()
     }
 }
 
-QTEST_MAIN(TestUpdateChecker)
+// Factory function for creating test instance
+QObject* createTestUpdateCheckerInstance() {
+    return new TestUpdateChecker();
+}
+
 #include "test_update_checker.moc"
