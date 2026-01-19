@@ -382,57 +382,11 @@ jobs:
         
         # Generate build date version for pre-release
         $buildDate = Get-Date -Format "yyyyMMdd"
-        $buildTime = Get-Date -Format "HHmmss"
         $fullVersion = "${version}.${buildDate}"
         
-        $issContent = @"
-; AutoBrightnessWidget Installer Script
-#define MyAppName "AutoBrightnessWidget"
-#define MyAppVersion "${fullVersion}"
-#define MyAppPublisher "183965983"
-#define MyAppURL "https://github.com/183965983/AutoBrightnessWidget"
-#define MyAppExeName "AutoBrightnessWidget.exe"
-
-[Setup]
-AppId={{8F9E5C4D-2A3B-4E7F-9D8C-1B6A5E4F3C2D}
-AppName={#MyAppName}
-AppVersion={#MyAppVersion}
-AppPublisher={#MyAppPublisher}
-AppPublisherURL={#MyAppURL}
-AppSupportURL={#MyAppURL}
-AppUpdatesURL={#MyAppURL}
-DefaultDirName={autopf}\{#MyAppName}
-DefaultGroupName={#MyAppName}
-DisableProgramGroupPage=yes
-LicenseFile=
-OutputDir=.
-OutputBaseFilename=AutoBrightnessWidget-Setup-Windows-x64
-SetupIconFile=
-Compression=lzma2/max
-SolidCompression=yes
-WizardStyle=modern
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
-PrivilegesRequired=admin
-
-[Languages]
-Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
-
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-
-[Files]
-Source: "installer-files\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-[Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
-
-[Run]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-"@
+        # Read template and replace version placeholder
+        $templateContent = Get-Content "installer-script.iss.template" -Raw
+        $issContent = $templateContent -replace '{{VERSION}}', $fullVersion
         
         Set-Content -Path "installer-script.iss" -Value $issContent
         Write-Host "Inno Setup script created with version: $fullVersion"
