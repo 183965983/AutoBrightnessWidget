@@ -23,10 +23,24 @@ For the latest development build with cutting-edge features, download artifacts 
 
 ## Features
 
-- Automatic brightness adjustment based on ambient light detection
+- **Automatic brightness adjustment** based on ambient light detection
+- **Multi-monitor support** - Configure different brightness curves for each display
 - Uses computer webcam for light sensing
+- **Customizable brightness curves** for fine-tuned control
+- **System tray integration** with minimize to tray support
 - Qt-based graphical user interface
+- Configuration persistence across sessions
 - Cross-platform support (Windows focus)
+
+### Multi-Monitor Support (New!)
+
+Configure independent brightness curves for each connected display:
+- All monitors share the same camera input
+- Each monitor can have its own brightness mapping
+- Support for custom curves per monitor
+- Easy-to-use configuration dialog
+
+See [MULTI_MONITOR_SUPPORT.md](MULTI_MONITOR_SUPPORT.md) for detailed documentation.
 
 ## Requirements
 
