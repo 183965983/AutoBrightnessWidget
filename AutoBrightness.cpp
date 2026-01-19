@@ -18,7 +18,14 @@ void AutoBrightness::setMonitorBrightness(int monitorIndex, int brightness) {
         return;
     }
     
+    // 验证 brightness 参数范围，防止注入
+    if (brightness < 0 || brightness > 100) {
+        qWarning() << "Invalid brightness value:" << brightness;
+        return;
+    }
+    
     // 使用 PowerShell 数组索引来设置特定显示器的亮度
+    // monitorIndex 已通过上述检查确保在有效范围内，brightness 也已验证
     QString command = QString(
         "$monitors = Get-WmiObject -Namespace root/wmi -Class WmiMonitorBrightnessMethods; "
         "if ($monitors -is [array]) { $monitors[%1].WmiSetBrightness(1, %2) } "
@@ -293,9 +300,15 @@ int AutoBrightness::interpolateCurve(int cameraBrightness) {
     for (int i = 0; i < static_cast<int>(m_curvePoints.size()) - 1; ++i) {
         if (cameraBrightness >= m_curvePoints[i].first && 
             cameraBrightness <= m_curvePoints[i + 1].first) {
+            // 防止除零错误：检查两个点的 x 坐标是否相同
+            int deltaX = m_curvePoints[i + 1].first - m_curvePoints[i].first;
+            if (deltaX == 0) {
+                qWarning() << "Duplicate curve point x-coordinates at" << m_curvePoints[i].first;
+                return m_curvePoints[i + 1].second;
+            }
+            
             // 线性插值
-            double ratio = static_cast<double>(cameraBrightness - m_curvePoints[i].first) / 
-                          (m_curvePoints[i + 1].first - m_curvePoints[i].first);
+            double ratio = static_cast<double>(cameraBrightness - m_curvePoints[i].first) / deltaX;
             int screenBrightness = m_curvePoints[i].second + 
                                   static_cast<int>(ratio * (m_curvePoints[i + 1].second - m_curvePoints[i].second));
             return std::max(0, std::min(100, screenBrightness));
@@ -466,8 +479,15 @@ int AutoBrightness::interpolateCurveForMonitor(int monitorIndex, int cameraBrigh
     for (int i = 0; i < static_cast<int>(curvePoints.size()) - 1; ++i) {
         if (cameraBrightness >= curvePoints[i].first && 
             cameraBrightness <= curvePoints[i + 1].first) {
-            double ratio = static_cast<double>(cameraBrightness - curvePoints[i].first) / 
-                          (curvePoints[i + 1].first - curvePoints[i].first);
+            // 防止除零错误：检查两个点的 x 坐标是否相同
+            int deltaX = curvePoints[i + 1].first - curvePoints[i].first;
+            if (deltaX == 0) {
+                // 如果两个点 x 坐标相同，返回第二个点的 y 值
+                qWarning() << "Monitor" << monitorIndex << "has duplicate curve point x-coordinates at" << curvePoints[i].first;
+                return curvePoints[i + 1].second;
+            }
+            
+            double ratio = static_cast<double>(cameraBrightness - curvePoints[i].first) / deltaX;
             int screenBrightness = curvePoints[i].second + 
                                   static_cast<int>(ratio * (curvePoints[i + 1].second - curvePoints[i].second));
             return std::max(0, std::min(100, screenBrightness));

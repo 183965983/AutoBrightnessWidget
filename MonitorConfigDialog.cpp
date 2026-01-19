@@ -337,5 +337,3 @@ void MonitorConfigDialog::onCancelClicked()
 {
     reject();
 }
-
-#include "moc_MonitorConfigDialog.cpp"
