@@ -53,6 +53,7 @@ A Qt-based desktop application for automatic screen brightness adjustment using 
 - 🎨 可自定义亮度曲线以实现精细控制 / **Customizable brightness curves** for fine-tuned control
 - 🔔 系统托盘集成，支持最小化到托盘 / **System tray integration** with minimize to tray support
 - 💾 配置持久化保存 / Configuration persistence across sessions
+- 📷 使用电脑摄像头感知环境光线 / Uses computer webcam for light sensing
 - 🎨 Qt 图形界面，操作简单直观 / Qt-based graphical user interface
 - 💻 跨平台支持（主要支持 Windows）/ Cross-platform support (Windows focus)
 - 📦 提供安装包和便携版两种分发形式 / Available as installer and portable version
