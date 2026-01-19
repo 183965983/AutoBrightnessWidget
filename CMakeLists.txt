@@ -31,6 +31,7 @@ set(PROJECT_SOURCES
         AutoBrightness.cpp
         CurveEditorWidget.cpp
         CurveEditorDialog.cpp
+        MonitorConfigDialog.cpp
         mainwindow.h
         mainwindow.ui
 )
@@ -42,6 +43,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         AutoBrightness.h
         CurveEditorWidget.h
         CurveEditorDialog.h
+        MonitorConfigDialog.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET AutoBrightnessWidget APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

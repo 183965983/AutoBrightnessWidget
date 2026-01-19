@@ -11,6 +11,7 @@
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
+#include "MonitorConfigDialog.h"
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -195,6 +196,12 @@ void MainWindow::on_editCurveButton_clicked()
         QMessageBox::information(this, "曲线已保存", 
             QString("曲线控制点数量: %1\n曲线映射已更新并保存").arg(points.size()));
     }
+}
+
+void MainWindow::on_monitorConfigButton_clicked()
+{
+    MonitorConfigDialog dialog(this);
+    dialog.exec();
 }
 
 void MainWindow::on_autoStartCheckBox_toggled(bool checked)

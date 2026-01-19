@@ -38,6 +38,7 @@ private slots:
     void on_autoStartCheckBox_toggled(bool checked);
     void on_minimizeToTrayCheckBox_toggled(bool checked);
     void on_editCurveButton_clicked();  // 新增：打开曲线编辑器
+    void on_monitorConfigButton_clicked();  // 新增：打开多显示器配置对话框
     
     // 亮度更新槽
     void updateCameraBrightness(int brightness);

@@ -375,6 +375,16 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="monitorConfigButton">
+         <property name="text">
+          <string>多显示器配置...</string>
+         </property>
+         <property name="toolTip">
+          <string>配置多个显示器的亮度曲线</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QCheckBox" name="minimizeToTrayCheckBox">
          <property name="text">
           <string>关闭时最小化到托盘</string>
