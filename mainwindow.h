@@ -93,6 +93,5 @@ private:
     
     // 实时亮度曲线
     BrightnessCurveWidget* m_curveWidget;
-    QLabel* m_lastUpdateLabel;
 };
 #endif // MAINWINDOW_H

@@ -214,10 +214,15 @@ void MainWindow::on_samplingFreqSlider_valueChanged(int value)
     // 使用对数映射：slider value 0-100 -> frequency 0.01-60 Hz
     // log10(0.01) = -2, log10(60) ≈ 1.778
     // 线性映射到对数空间
-    double logMin = -2.0;  // log10(0.01)
-    double logMax = 1.778; // log10(60)
+    const double logMin = -2.0;  // log10(0.01)
+    const double logMax = std::log10(60.0);  // log10(60) = 1.778...
     double logFreq = logMin + (value / 100.0) * (logMax - logMin);
     double freqHz = std::pow(10.0, logFreq);
+    
+    // 防止除零错误
+    if (freqHz <= 0.0) {
+        freqHz = 0.01;  // 最小频率
+    }
     
     // 转换为毫秒间隔
     int intervalMs = static_cast<int>(1000.0 / freqHz);

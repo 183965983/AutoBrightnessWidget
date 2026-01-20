@@ -1,7 +1,7 @@
 #include "BrightnessCurveWidget.h"
 #include <QPainter>
 #include <QDateTime>
-#include <cmath>
+#include <algorithm>  // for std::max, std::min
 
 BrightnessCurveWidget::BrightnessCurveWidget(QWidget *parent)
     : QWidget(parent)
@@ -15,8 +15,8 @@ void BrightnessCurveWidget::addDataPoint(int cameraBrightness, int screenBrightn
 {
     DataPoint point;
     point.timestamp = QDateTime::currentMSecsSinceEpoch();
-    point.cameraBrightness = std::clamp(cameraBrightness, 0, 100);
-    point.screenBrightness = std::clamp(screenBrightness, 0, 100);
+    point.cameraBrightness = qBound(0, cameraBrightness, 100);
+    point.screenBrightness = qBound(0, screenBrightness, 100);
     
     m_cameraData.append(point);
     
