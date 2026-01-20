@@ -134,75 +134,44 @@
       <property name="title">
        <string>亮度配置</string>
       </property>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <layout class="QVBoxLayout" name="brightnessConfigLayout">
        <item>
-        <layout class="QVBoxLayout" name="minBrightnessLayout">
+        <layout class="QHBoxLayout" name="monitorSelectLayout">
          <item>
-          <widget class="QLabel" name="minBrightnessLabel">
+          <widget class="QLabel" name="monitorSelectLabel">
            <property name="text">
-            <string>最小屏幕亮度:</string>
+            <string>选择显示器:</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QSpinBox" name="minScreenBrightnessSpinBox">
-           <property name="maximum">
-            <number>100</number>
-           </property>
-           <property name="value">
-            <number>0</number>
+          <widget class="QComboBox" name="monitorSelectComboBox">
+           <property name="toolTip">
+            <string>选择要配置的显示器</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="setMinBrightnessButton">
+          <widget class="QPushButton" name="refreshMonitorsButton">
            <property name="text">
-            <string>配置最小亮度</string>
+            <string>刷新</string>
+           </property>
+           <property name="toolTip">
+            <string>重新检测显示器</string>
            </property>
           </widget>
          </item>
         </layout>
        </item>
        <item>
-        <spacer name="horizontalSpacer_5">
-         <property name="orientation">
-          <enum>Qt::Orientation::Horizontal</enum>
+        <widget class="QPushButton" name="editCurveButton">
+         <property name="text">
+          <string>编辑亮度曲线...</string>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
+         <property name="toolTip">
+          <string>编辑当前显示器的亮度映射曲线（包含自动标定功能）</string>
          </property>
-        </spacer>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="maxBrightnessLayout">
-         <item>
-          <widget class="QLabel" name="maxBrightnessLabel">
-           <property name="text">
-            <string>最大屏幕亮度:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="maxScreenBrightnessSpinBox">
-           <property name="maximum">
-            <number>100</number>
-           </property>
-           <property name="value">
-            <number>100</number>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="setMaxBrightnessButton">
-           <property name="text">
-            <string>配置最大亮度</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -474,30 +443,6 @@
        <string>高级设置</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <widget class="QCheckBox" name="useCurveCheckBox">
-         <property name="text">
-          <string>使用曲线调整</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="editCurveButton">
-         <property name="text">
-          <string>编辑曲线...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="monitorConfigButton">
-         <property name="text">
-          <string>多显示器配置...</string>
-         </property>
-         <property name="toolTip">
-          <string>配置多个显示器的亮度曲线</string>
-         </property>
-        </widget>
-       </item>
        <item>
         <widget class="QCheckBox" name="minimizeToTrayCheckBox">
          <property name="text">

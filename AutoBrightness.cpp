@@ -447,17 +447,19 @@ bool AutoBrightness::validateMonitorConfiguration(int monitorIndex, QString* err
 int AutoBrightness::mapBrightnessForMonitor(int monitorIndex, int cameraBrightness) {
     auto it = m_monitorConfigs.find(monitorIndex);
     if (it == m_monitorConfigs.end()) {
-        // 使用默认配置
-        return mapBrightness(cameraBrightness);
+        // 使用默认线性曲线 (0,0) -> (100,100)
+        qDebug() << "Monitor" << monitorIndex << "has no config, using default linear curve";
+        return std::max(0, std::min(100, cameraBrightness));
     }
     
     const MonitorConfig& config = it->second;
     
-    if (config.useCurve && config.curvePoints.size() >= 2) {
+    // 统一使用曲线插值
+    if (config.curvePoints.size() >= 2) {
         return interpolateCurveForMonitor(monitorIndex, cameraBrightness);
     }
     
-    // 线性映射
+    // 如果没有曲线点，从线性配置生成临时曲线
     if (config.maxCameraBrightness == config.minCameraBrightness) {
         qWarning() << "Monitor" << monitorIndex << "min and max camera brightness are equal";
         return config.minScreenBrightness;
@@ -633,7 +635,50 @@ void AutoBrightness::loadSettings() {
     }
     settings.endArray();
     
+    // 配置迁移：将旧的线性配置转换为曲线
+    migrateLinearToCurve();
+    
     qDebug() << "Settings loaded (including" << m_monitorConfigs.size() << "monitor configs)";
+}
+
+void AutoBrightness::migrateLinearToCurve() {
+    bool needsSave = false;
+    
+    // 迁移全局配置（向后兼容）
+    if (!m_useCurve && m_curvePoints.size() < 2) {
+        // 从线性配置创建两点曲线
+        m_curvePoints.clear();
+        m_curvePoints.push_back(std::make_pair(m_minCameraBrightness, m_minScreenBrightness));
+        m_curvePoints.push_back(std::make_pair(m_maxCameraBrightness, m_maxScreenBrightness));
+        m_useCurve = true;
+        needsSave = true;
+        qDebug() << "Migrated global linear config to curve:" 
+                 << "(" << m_minCameraBrightness << "," << m_minScreenBrightness << ")" 
+                 << "to" 
+                 << "(" << m_maxCameraBrightness << "," << m_maxScreenBrightness << ")";
+    }
+    
+    // 迁移每个显示器的配置
+    for (auto& pair : m_monitorConfigs) {
+        MonitorConfig& config = pair.second;
+        if (!config.useCurve && config.curvePoints.size() < 2) {
+            // 从线性配置创建两点曲线
+            config.curvePoints.clear();
+            config.curvePoints.push_back(std::make_pair(config.minCameraBrightness, config.minScreenBrightness));
+            config.curvePoints.push_back(std::make_pair(config.maxCameraBrightness, config.maxScreenBrightness));
+            config.useCurve = true;
+            needsSave = true;
+            qDebug() << "Migrated monitor" << pair.first << "linear config to curve:" 
+                     << "(" << config.minCameraBrightness << "," << config.minScreenBrightness << ")" 
+                     << "to" 
+                     << "(" << config.maxCameraBrightness << "," << config.maxScreenBrightness << ")";
+        }
+    }
+    
+    if (needsSave) {
+        saveSettings();
+        qDebug() << "Migration complete, settings saved";
+    }
 }
 
 #include "moc_AutoBrightness.cpp"

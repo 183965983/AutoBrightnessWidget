@@ -1,20 +1,25 @@
 #include "CurveEditorDialog.h"
 #include "CurveEditorWidget.h"
+#include "AutoBrightness.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QGroupBox>
+#include <QMessageBox>
+#include <QSpinBox>
 
 CurveEditorDialog::CurveEditorDialog(QWidget *parent)
     : QDialog(parent)
     , m_curveEditor(nullptr)
     , m_presetComboBox(nullptr)
     , m_resetButton(nullptr)
+    , m_setMinButton(nullptr)
+    , m_setMaxButton(nullptr)
     , m_okButton(nullptr)
     , m_cancelButton(nullptr)
 {
     setWindowTitle("曲线编辑器");
-    setMinimumSize(600, 500);
+    setMinimumSize(600, 550);
     setupUI();
 }
 
@@ -64,6 +69,26 @@ void CurveEditorDialog::setupUI()
     presetLayout->addStretch();
     mainLayout->addWidget(presetGroup);
     
+    // 自动标定区域
+    QGroupBox* calibrationGroup = new QGroupBox("自动标定", this);
+    QHBoxLayout* calibrationLayout = new QHBoxLayout(calibrationGroup);
+    
+    QLabel* calibrationLabel = new QLabel("根据当前环境光线设置曲线端点:", calibrationGroup);
+    calibrationLayout->addWidget(calibrationLabel);
+    
+    m_setMinButton = new QPushButton("设置最小亮度", calibrationGroup);
+    m_setMinButton->setToolTip("在最暗环境下点击，将当前摄像头亮度设为曲线起点");
+    connect(m_setMinButton, &QPushButton::clicked, this, &CurveEditorDialog::onSetMinBrightnessClicked);
+    calibrationLayout->addWidget(m_setMinButton);
+    
+    m_setMaxButton = new QPushButton("设置最大亮度", calibrationGroup);
+    m_setMaxButton->setToolTip("在最亮环境下点击，将当前摄像头亮度设为曲线终点");
+    connect(m_setMaxButton, &QPushButton::clicked, this, &CurveEditorDialog::onSetMaxBrightnessClicked);
+    calibrationLayout->addWidget(m_setMaxButton);
+    
+    calibrationLayout->addStretch();
+    mainLayout->addWidget(calibrationGroup);
+    
     // 按钮
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
@@ -109,6 +134,114 @@ void CurveEditorDialog::onResetClicked()
         m_curveEditor->resetToLinear();
     }
     m_presetComboBox->setCurrentIndex(0);
+}
+
+void CurveEditorDialog::onSetMinBrightnessClicked()
+{
+    int cameraBrightness = AutoBrightness::getInstance()->getCurrentCameraBrightness();
+    
+    // 弹出对话框让用户输入对应的屏幕亮度
+    QDialog dialog(this);
+    dialog.setWindowTitle("设置最小亮度");
+    
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    
+    QLabel* infoLabel = new QLabel(
+        QString("当前摄像头亮度: %1\n"
+                "请设置对应的屏幕亮度（0-100）：").arg(cameraBrightness), &dialog);
+    layout->addWidget(infoLabel);
+    
+    QSpinBox* spinBox = new QSpinBox(&dialog);
+    spinBox->setRange(0, 100);
+    spinBox->setValue(0);
+    spinBox->setSuffix(" %");
+    layout->addWidget(spinBox);
+    
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* okButton = new QPushButton("确定", &dialog);
+    QPushButton* cancelButton = new QPushButton("取消", &dialog);
+    connect(okButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(cancelButton, &QPushButton::clicked, &dialog, &QDialog::reject);
+    buttonLayout->addWidget(okButton);
+    buttonLayout->addWidget(cancelButton);
+    layout->addLayout(buttonLayout);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        int screenBrightness = spinBox->value();
+        
+        // 更新曲线的起点
+        if (m_curveEditor) {
+            auto points = m_curveEditor->getCurvePoints();
+            if (points.size() >= 2) {
+                points[0] = std::make_pair(cameraBrightness, screenBrightness);
+                m_curveEditor->setCurvePoints(points);
+            } else {
+                // 如果曲线点少于2个，创建默认线性曲线
+                points.clear();
+                points.push_back(std::make_pair(cameraBrightness, screenBrightness));
+                points.push_back(std::make_pair(100, 100));
+                m_curveEditor->setCurvePoints(points);
+            }
+        }
+        
+        QMessageBox::information(this, "设置成功", 
+            QString("最小亮度已设置:\n摄像头亮度: %1\n屏幕亮度: %2")
+            .arg(cameraBrightness).arg(screenBrightness));
+    }
+}
+
+void CurveEditorDialog::onSetMaxBrightnessClicked()
+{
+    int cameraBrightness = AutoBrightness::getInstance()->getCurrentCameraBrightness();
+    
+    // 弹出对话框让用户输入对应的屏幕亮度
+    QDialog dialog(this);
+    dialog.setWindowTitle("设置最大亮度");
+    
+    QVBoxLayout* layout = new QVBoxLayout(&dialog);
+    
+    QLabel* infoLabel = new QLabel(
+        QString("当前摄像头亮度: %1\n"
+                "请设置对应的屏幕亮度（0-100）：").arg(cameraBrightness), &dialog);
+    layout->addWidget(infoLabel);
+    
+    QSpinBox* spinBox = new QSpinBox(&dialog);
+    spinBox->setRange(0, 100);
+    spinBox->setValue(100);
+    spinBox->setSuffix(" %");
+    layout->addWidget(spinBox);
+    
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* okButton = new QPushButton("确定", &dialog);
+    QPushButton* cancelButton = new QPushButton("取消", &dialog);
+    connect(okButton, &QPushButton::clicked, &dialog, &QDialog::accept);
+    connect(cancelButton, &QPushButton::clicked, &dialog, &QDialog::reject);
+    buttonLayout->addWidget(okButton);
+    buttonLayout->addWidget(cancelButton);
+    layout->addLayout(buttonLayout);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        int screenBrightness = spinBox->value();
+        
+        // 更新曲线的终点
+        if (m_curveEditor) {
+            auto points = m_curveEditor->getCurvePoints();
+            if (points.size() >= 2) {
+                points.back() = std::make_pair(cameraBrightness, screenBrightness);
+                m_curveEditor->setCurvePoints(points);
+            } else {
+                // 如果曲线点少于2个，创建默认线性曲线
+                points.clear();
+                points.push_back(std::make_pair(0, 0));
+                points.push_back(std::make_pair(cameraBrightness, screenBrightness));
+                m_curveEditor->setCurvePoints(points);
+            }
+        }
+        
+        QMessageBox::information(this, "设置成功", 
+            QString("最大亮度已设置:\n摄像头亮度: %1\n屏幕亮度: %2")
+            .arg(cameraBrightness).arg(screenBrightness));
+    }
 }
 
 void CurveEditorDialog::onOkClicked()
