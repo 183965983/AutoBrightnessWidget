@@ -135,9 +135,12 @@ void BrightnessCurveWidget::drawCurve(QPainter &painter, const QRect &plotArea)
     // 准备绘制摄像头亮度曲线（蓝色）
     painter.setPen(QPen(QColor(0, 120, 215), 2));  // 蓝色线条
     
+    const int dataSize = m_cameraData.size();
+    const double widthScale = plotArea.width() / static_cast<double>(dataSize - 1);
+    
     QVector<QPointF> cameraPoints;
-    for (int i = 0; i < m_cameraData.size(); ++i) {
-        double x = plotArea.left() + (static_cast<double>(i) / (m_cameraData.size() - 1)) * plotArea.width();
+    for (int i = 0; i < dataSize; ++i) {
+        double x = plotArea.left() + i * widthScale;
         double y = plotArea.bottom() - (m_cameraData[i].cameraBrightness / 100.0) * plotArea.height();
         cameraPoints.append(QPointF(x, y));
     }
@@ -151,8 +154,8 @@ void BrightnessCurveWidget::drawCurve(QPainter &painter, const QRect &plotArea)
     painter.setPen(QPen(QColor(255, 140, 0), 2));  // 橙色线条
     
     QVector<QPointF> screenPoints;
-    for (int i = 0; i < m_cameraData.size(); ++i) {
-        double x = plotArea.left() + (static_cast<double>(i) / (m_cameraData.size() - 1)) * plotArea.width();
+    for (int i = 0; i < dataSize; ++i) {
+        double x = plotArea.left() + i * widthScale;
         double y = plotArea.bottom() - (m_cameraData[i].screenBrightness / 100.0) * plotArea.height();
         screenPoints.append(QPointF(x, y));
     }
