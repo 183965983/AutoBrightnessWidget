@@ -87,7 +87,7 @@ void BrightnessCurveWidget::drawGrid(QPainter &painter, const QRect &plotArea)
     
     // 绘制垂直网格线（如果有足够数据点）
     if (m_cameraData.size() > 1) {
-        int gridCount = std::min(10, m_cameraData.size() - 1);
+        int gridCount = std::min(10, static_cast<int>(m_cameraData.size() - 1));
         for (int i = 0; i <= gridCount; ++i) {
             int x = plotArea.left() + (plotArea.width() * i / gridCount);
             painter.drawLine(x, plotArea.top(), x, plotArea.bottom());
