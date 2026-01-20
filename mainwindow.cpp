@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QTime>
+#include <QVBoxLayout>
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
@@ -44,15 +45,20 @@ MainWindow::MainWindow(QWidget *parent)
     
     // 创建并初始化实时亮度曲线组件
     m_curveWidget = new BrightnessCurveWidget(this);
-    // 替换UI中的占位符
-    QWidget* placeholder = ui->curveWidgetPlaceholder;
-    if (placeholder && placeholder->parentWidget()) {
-        QVBoxLayout* curveLayout = qobject_cast<QVBoxLayout*>(placeholder->parentWidget()->layout());
-        if (curveLayout) {
-            // 移除占位符并添加实际的曲线widget
-            curveLayout->removeWidget(placeholder);
-            placeholder->hide();
-            curveLayout->addWidget(m_curveWidget);
+    
+    if (!m_curveWidget) {
+        qCritical() << "Failed to create BrightnessCurveWidget";
+    } else {
+        // 替换UI中的占位符
+        QWidget* placeholder = ui->curveWidgetPlaceholder;
+        if (placeholder && placeholder->parentWidget()) {
+            QVBoxLayout* curveLayout = qobject_cast<QVBoxLayout*>(placeholder->parentWidget()->layout());
+            if (curveLayout) {
+                // 移除占位符并添加实际的曲线widget
+                curveLayout->removeWidget(placeholder);
+                placeholder->hide();
+                curveLayout->addWidget(m_curveWidget);
+            }
         }
     }
     
@@ -83,8 +89,6 @@ MainWindow::MainWindow(QWidget *parent)
     double currentFreq = 1000.0 / m_autoBrightness->getCaptureInterval();
     updateSamplingFreqLabel(currentFreq);
     
-    // 初始化显示器列表（后台异步）
-    // 注意：在主线程启动前不刷新，避免阻塞 UI
     // 初始化显示器列表
     refreshMonitorList();
     
@@ -239,7 +243,6 @@ void MainWindow::on_samplingFreqSlider_valueChanged(int value)
     updateExposureLimits(freqHz);
 }
 
-void MainWindow::on_setMinBrightnessButton_clicked()
 void MainWindow::on_editCurveButton_clicked()
 {
     if (m_currentMonitorIndex < 0) {
@@ -589,6 +592,13 @@ void MainWindow::updateExposureLimits(double freqHz)
     // 曝光时间不应超过采样间隔的一半，以避免冲突
     // 采样间隔 = 1 / freqHz 秒
     double maxExposureTime = 0.5 / freqHz;  // 秒
+    
+    // 添加合理的上限值检查，避免计算出不切实际的曝光时间建议
+    // 相机曝光时间通常不会超过10秒
+    const double MAX_PRACTICAL_EXPOSURE = 10.0;  // 秒
+    if (maxExposureTime > MAX_PRACTICAL_EXPOSURE) {
+        maxExposureTime = MAX_PRACTICAL_EXPOSURE;
+    }
     
     // 相机曝光值通常是对数刻度，这里做简单提示
     // 实际限制需要根据具体相机特性调整

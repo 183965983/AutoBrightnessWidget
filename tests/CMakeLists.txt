@@ -23,8 +23,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
-        ../MonitorConfigDialog.cpp
-        ../MonitorConfigDialog.h
         ../BrightnessCurveWidget.cpp
         ../BrightnessCurveWidget.h
         ../UpdateChecker.cpp
@@ -44,8 +42,6 @@ else()
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
-        ../MonitorConfigDialog.cpp
-        ../MonitorConfigDialog.h
         ../BrightnessCurveWidget.cpp
         ../BrightnessCurveWidget.h
         ../UpdateChecker.cpp

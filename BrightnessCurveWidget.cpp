@@ -136,6 +136,7 @@ void BrightnessCurveWidget::drawCurve(QPainter &painter, const QRect &plotArea)
     painter.setPen(QPen(QColor(0, 120, 215), 2));  // 蓝色线条
     
     const int dataSize = m_cameraData.size();
+    Q_ASSERT(dataSize > 1);  // 已在函数开头对 size < 2 做过检查，这里不会发生除零
     const double widthScale = plotArea.width() / static_cast<double>(dataSize - 1);
     
     QVector<QPointF> cameraPoints;
