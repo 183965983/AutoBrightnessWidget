@@ -56,11 +56,13 @@ public:
     void setExposure(double exposure);
     void setCaptureInterval(int intervalMs);
     void setSamplePoints(int points);
+    void setGain(double gain);  // 新增：设置曝光增益
     
     // 获取参数的方法
     double getExposure() const { return m_exposure; }
     int getCaptureInterval() const { return m_captureInterval; }
     int getSamplePoints() const { return m_samplePoints; }
+    double getGain() const { return m_gain; }  // 新增：获取曝光增益
     
     // 多显示器支持
     void refreshMonitors();
@@ -135,6 +137,7 @@ private:
     double m_exposure;           // 曝光时间
     int m_captureInterval;       // 拍照间隔（毫秒）
     int m_samplePoints;          // 采样点数（每行/列）
+    double m_gain;               // 曝光增益
     
     // 传统单显示器配置（向后兼容，应用到第一个显示器）
     int m_minCameraBrightness;
