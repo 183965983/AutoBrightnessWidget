@@ -116,6 +116,7 @@ private:
     int interpolateCurve(int cameraBrightness);
     int mapBrightnessForMonitor(int monitorIndex, int cameraBrightness);
     int interpolateCurveForMonitor(int monitorIndex, int cameraBrightness);
+    void migrateLinearToCurve();  // 迁移旧配置到曲线模式
 
 private:
     void setBrightness(int);
