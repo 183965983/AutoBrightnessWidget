@@ -27,6 +27,8 @@ public:
 private slots:
     void onPresetChanged(int index);
     void onResetClicked();
+    void onSetMinBrightnessClicked();
+    void onSetMaxBrightnessClicked();
     void onOkClicked();
     void onCancelClicked();
 
@@ -37,6 +39,8 @@ private:
     CurveEditorWidget* m_curveEditor;
     QComboBox* m_presetComboBox;
     QPushButton* m_resetButton;
+    QPushButton* m_setMinButton;
+    QPushButton* m_setMaxButton;
     QPushButton* m_okButton;
     QPushButton* m_cancelButton;
     

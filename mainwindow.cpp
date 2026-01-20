@@ -14,7 +14,6 @@
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
-#include "MonitorConfigDialog.h"
 #include "UpdateChecker.h"
 #include "UpdateDialog.h"
 
@@ -35,6 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
     , m_minimizeToTray(false)
     , m_statusLabel(nullptr)
     , m_lastUpdateLabel(nullptr)
+    , m_currentMonitorIndex(-1)
 {
     ui->setupUi(this);
     
@@ -61,10 +61,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_minimizeToTray = settings.value("minimizeToTray", false).toBool();
     ui->minimizeToTrayCheckBox->setChecked(m_minimizeToTray);
     ui->autoStartCheckBox->setChecked(isAutoStartEnabled());
-    ui->useCurveCheckBox->setChecked(m_autoBrightness->getUseCurve());
     
-    // 初始化显示器列表（后台异步）
-    // 注意：在主线程启动前不刷新，避免阻塞 UI
+    // 初始化显示器列表
+    refreshMonitorList();
     
     // 初始化显示
     updateCameraBrightness(0);
@@ -177,79 +176,42 @@ void MainWindow::on_samplePointsSlider_valueChanged(int value)
     ui->samplePointsValueLabel->setText(QString::number(value) + "x" + QString::number(value));
 }
 
-void MainWindow::on_setMinBrightnessButton_clicked()
-{
-    int cameraBrightness = m_autoBrightness->getCurrentCameraBrightness();
-    int screenBrightness = ui->minScreenBrightnessSpinBox->value();
-    m_autoBrightness->setMinBrightness(cameraBrightness, screenBrightness);
-    
-    // 验证配置
-    QString errorMessage;
-    if (!m_autoBrightness->validateBrightnessConfiguration(&errorMessage)) {
-        QMessageBox::warning(this, "配置警告", 
-            QString("最小亮度已配置，但当前配置可能无效:\n\n%1\n\n"
-                    "请配置有效的最大亮度以确保正确映射。")
-            .arg(errorMessage));
-    } else {
-        m_autoBrightness->saveSettings();
-        QMessageBox::information(this, "配置成功", 
-            QString("最小亮度已配置:\n摄像头亮度: %1\n屏幕亮度: %2")
-            .arg(cameraBrightness).arg(screenBrightness));
-    }
-}
-
-void MainWindow::on_setMaxBrightnessButton_clicked()
-{
-    int cameraBrightness = m_autoBrightness->getCurrentCameraBrightness();
-    int screenBrightness = ui->maxScreenBrightnessSpinBox->value();
-    m_autoBrightness->setMaxBrightness(cameraBrightness, screenBrightness);
-    
-    // 验证配置
-    QString errorMessage;
-    if (!m_autoBrightness->validateBrightnessConfiguration(&errorMessage)) {
-        QMessageBox::warning(this, "配置警告", 
-            QString("最大亮度已配置，但当前配置可能无效:\n\n%1\n\n"
-                    "请检查并调整配置以确保正确映射。")
-            .arg(errorMessage));
-    } else {
-        m_autoBrightness->saveSettings();
-        QMessageBox::information(this, "配置成功", 
-            QString("最大亮度已配置:\n摄像头亮度: %1\n屏幕亮度: %2")
-            .arg(cameraBrightness).arg(screenBrightness));
-    }
-}
-
-void MainWindow::on_useCurveCheckBox_toggled(bool checked)
-{
-    m_autoBrightness->setUseCurve(checked);
-    m_autoBrightness->saveSettings();
-}
-
 void MainWindow::on_editCurveButton_clicked()
 {
+    if (m_currentMonitorIndex < 0) {
+        QMessageBox::warning(this, "警告", "请先选择一个显示器");
+        return;
+    }
+    
     CurveEditorDialog dialog(this);
-    dialog.setCurvePoints(m_autoBrightness->getCurvePoints());
+    dialog.setCurvePoints(m_autoBrightness->getMonitorConfig(m_currentMonitorIndex).curvePoints);
     
     if (dialog.exec() == QDialog::Accepted) {
         auto points = dialog.getCurvePoints();
-        m_autoBrightness->setCurvePoints(points);
+        m_autoBrightness->setMonitorCurvePoints(m_currentMonitorIndex, points);
         m_autoBrightness->saveSettings();
-        
-        // 如果用户编辑了曲线，自动启用曲线模式
-        if (points.size() > 2) {
-            ui->useCurveCheckBox->setChecked(true);
-            m_autoBrightness->setUseCurve(true);
-        }
         
         QMessageBox::information(this, "曲线已保存", 
             QString("曲线控制点数量: %1\n曲线映射已更新并保存").arg(points.size()));
     }
 }
 
-void MainWindow::on_monitorConfigButton_clicked()
+void MainWindow::on_monitorSelectComboBox_currentIndexChanged(int index)
 {
-    MonitorConfigDialog dialog(this);
-    dialog.exec();
+    if (index < 0) {
+        return;
+    }
+    
+    std::vector<MonitorInfo> monitors = m_autoBrightness->getMonitors();
+    if (index < static_cast<int>(monitors.size())) {
+        m_currentMonitorIndex = monitors[index].index;
+        loadMonitorConfig(m_currentMonitorIndex);
+    }
+}
+
+void MainWindow::on_refreshMonitorsButton_clicked()
+{
+    refreshMonitorList();
 }
 
 void MainWindow::on_autoStartCheckBox_toggled(bool checked)
@@ -538,6 +500,49 @@ void MainWindow::updateButtonStates()
         ui->pushButton_2->setEnabled(false);
         ui->pushButton_2->setToolTip("自动亮度调节未运行");
     }
+}
+
+void MainWindow::refreshMonitorList()
+{
+    ui->monitorSelectComboBox->clear();
+    m_autoBrightness->refreshMonitors();
+    
+    std::vector<MonitorInfo> monitors = m_autoBrightness->getMonitors();
+    
+    if (monitors.empty()) {
+        ui->monitorSelectComboBox->addItem("未检测到显示器");
+        ui->monitorSelectComboBox->setEnabled(false);
+        ui->editCurveButton->setEnabled(false);
+        m_currentMonitorIndex = -1;
+        return;
+    }
+    
+    ui->monitorSelectComboBox->setEnabled(true);
+    ui->editCurveButton->setEnabled(true);
+    
+    for (const MonitorInfo& monitor : monitors) {
+        QString itemText = QString("%1").arg(monitor.friendlyName);
+        ui->monitorSelectComboBox->addItem(itemText);
+    }
+    
+    // 选中第一个显示器
+    if (!monitors.empty()) {
+        ui->monitorSelectComboBox->setCurrentIndex(0);
+        m_currentMonitorIndex = monitors[0].index;
+        loadMonitorConfig(m_currentMonitorIndex);
+    }
+}
+
+void MainWindow::loadMonitorConfig(int monitorIndex)
+{
+    if (monitorIndex < 0) {
+        return;
+    }
+    
+    MonitorConfig config = m_autoBrightness->getMonitorConfig(monitorIndex);
+    
+    // 目前只需要加载配置用于曲线编辑器
+    // 其他UI元素已经被移除
 }
 
 

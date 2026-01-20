@@ -32,14 +32,12 @@ private slots:
     void on_intervalSlider_valueChanged(int value);
     void on_samplePointsSlider_valueChanged(int value);
     
-    // 新增槽函数
-    void on_setMinBrightnessButton_clicked();
-    void on_setMaxBrightnessButton_clicked();
-    void on_useCurveCheckBox_toggled(bool checked);
+    // 新槽函数
     void on_autoStartCheckBox_toggled(bool checked);
     void on_minimizeToTrayCheckBox_toggled(bool checked);
-    void on_editCurveButton_clicked();  // 新增：打开曲线编辑器
-    void on_monitorConfigButton_clicked();  // 新增：打开多显示器配置对话框
+    void on_editCurveButton_clicked();
+    void on_monitorSelectComboBox_currentIndexChanged(int index);
+    void on_refreshMonitorsButton_clicked();
     
     // 亮度更新槽
     void updateCameraBrightness(int brightness);
@@ -69,11 +67,14 @@ private:
     void updateLastUpdateTime();
     void updateTrayMenu();  // 更新托盘菜单状态
     void checkForUpdates();
+    void refreshMonitorList();  // 刷新显示器列表
+    void loadMonitorConfig(int monitorIndex);  // 加载显示器配置
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;
     AutoBrightness* m_autoBrightness;
     bool m_running;
+    int m_currentMonitorIndex;  // 当前选中的显示器索引
     
     // 系统托盘
     QSystemTrayIcon* m_trayIcon;

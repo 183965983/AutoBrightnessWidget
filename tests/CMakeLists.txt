@@ -22,8 +22,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
-        ../MonitorConfigDialog.cpp
-        ../MonitorConfigDialog.h
         ../UpdateChecker.cpp
         ../UpdateChecker.h
         ../UpdateDialog.cpp
@@ -41,8 +39,6 @@ else()
         ../CurveEditorWidget.h
         ../CurveEditorDialog.cpp
         ../CurveEditorDialog.h
-        ../MonitorConfigDialog.cpp
-        ../MonitorConfigDialog.h
         ../UpdateChecker.cpp
         ../UpdateChecker.h
         ../UpdateDialog.cpp
