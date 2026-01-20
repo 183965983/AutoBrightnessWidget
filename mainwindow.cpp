@@ -46,19 +46,15 @@ MainWindow::MainWindow(QWidget *parent)
     // 创建并初始化实时亮度曲线组件
     m_curveWidget = new BrightnessCurveWidget(this);
     
-    if (!m_curveWidget) {
-        qCritical() << "Failed to create BrightnessCurveWidget";
-    } else {
-        // 替换UI中的占位符
-        QWidget* placeholder = ui->curveWidgetPlaceholder;
-        if (placeholder && placeholder->parentWidget()) {
-            QVBoxLayout* curveLayout = qobject_cast<QVBoxLayout*>(placeholder->parentWidget()->layout());
-            if (curveLayout) {
-                // 移除占位符并添加实际的曲线widget
-                curveLayout->removeWidget(placeholder);
-                placeholder->hide();
-                curveLayout->addWidget(m_curveWidget);
-            }
+    // 替换UI中的占位符
+    QWidget* placeholder = ui->curveWidgetPlaceholder;
+    if (placeholder && placeholder->parentWidget()) {
+        QVBoxLayout* curveLayout = qobject_cast<QVBoxLayout*>(placeholder->parentWidget()->layout());
+        if (curveLayout) {
+            // 移除占位符并添加实际的曲线widget
+            curveLayout->removeWidget(placeholder);
+            placeholder->hide();
+            curveLayout->addWidget(m_curveWidget);
         }
     }
     
