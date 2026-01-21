@@ -8,6 +8,7 @@ class TestNewFeatures;
 class TestMultiMonitor;
 class TestUpdateChecker;
 class TestStatusBar;
+class TestRealTimeCurve;
 
 // External test class declarations (defined in their respective .cpp files)
 extern QObject* createTestBrightnessInstance();
@@ -16,6 +17,7 @@ extern QObject* createTestNewFeaturesInstance();
 extern QObject* createTestMultiMonitorInstance();
 extern QObject* createTestUpdateCheckerInstance();
 extern QObject* createTestStatusBarInstance();
+extern QObject* createTestRealTimeCurveInstance();
 
 int main(int argc, char *argv[])
 {
@@ -61,6 +63,13 @@ int main(int argc, char *argv[])
     // Run status bar tests
     {
         QObject* tc = createTestStatusBarInstance();
+        status |= QTest::qExec(tc, argc, argv);
+        delete tc;
+    }
+    
+    // Run real-time curve tests
+    {
+        QObject* tc = createTestRealTimeCurveInstance();
         status |= QTest::qExec(tc, argc, argv);
         delete tc;
     }

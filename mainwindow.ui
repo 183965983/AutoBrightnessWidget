@@ -324,6 +324,120 @@
      </widget>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="gainLayout">
+      <item>
+       <widget class="QLabel" name="gainLabel">
+        <property name="text">
+         <string>曝光增益:</string>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>80</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="gainSlider">
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>255</number>
+        </property>
+        <property name="value">
+         <number>0</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="gainValueLabel">
+        <property name="text">
+         <string>0</string>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>50</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="samplingFreqLayout">
+      <item>
+       <widget class="QLabel" name="samplingFreqLabel">
+        <property name="text">
+         <string>采样频率:</string>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>80</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="samplingFreqSlider">
+        <property name="minimum">
+         <number>0</number>
+        </property>
+        <property name="maximum">
+         <number>100</number>
+        </property>
+        <property name="value">
+         <number>20</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="toolTip">
+         <string>对数刻度: 0.01Hz - 60Hz</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="samplingFreqValueLabel">
+        <property name="text">
+         <string>0.1 Hz</string>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>70</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="curveGroupBox">
+      <property name="title">
+       <string>实时亮度曲线</string>
+      </property>
+      <layout class="QVBoxLayout" name="curveGroupBoxLayout">
+       <item>
+        <widget class="QWidget" name="curveWidgetPlaceholder" native="true">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>200</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
      <widget class="QGroupBox" name="advancedGroupBox">
       <property name="title">
        <string>高级设置</string>

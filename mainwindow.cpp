@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QLabel>
 #include <QTime>
+#include <QVBoxLayout>
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
@@ -34,12 +35,28 @@ MainWindow::MainWindow(QWidget *parent)
     , m_minimizeToTray(false)
     , m_statusLabel(nullptr)
     , m_lastUpdateLabel(nullptr)
+    , m_curveWidget(nullptr)
     , m_currentMonitorIndex(-1)
 {
     ui->setupUi(this);
     
     // 设置窗口标题
     setWindowTitle("Auto Brightness Widget");
+    
+    // 创建并初始化实时亮度曲线组件
+    m_curveWidget = new BrightnessCurveWidget(this);
+    
+    // 替换UI中的占位符
+    QWidget* placeholder = ui->curveWidgetPlaceholder;
+    if (placeholder && placeholder->parentWidget()) {
+        QVBoxLayout* curveLayout = qobject_cast<QVBoxLayout*>(placeholder->parentWidget()->layout());
+        if (curveLayout) {
+            // 移除占位符并添加实际的曲线widget
+            curveLayout->removeWidget(placeholder);
+            placeholder->hide();
+            curveLayout->addWidget(m_curveWidget);
+        }
+    }
     
     // 设置状态栏
     m_statusLabel = new QLabel("状态: 已停止", this);
@@ -61,6 +78,12 @@ MainWindow::MainWindow(QWidget *parent)
     m_minimizeToTray = settings.value("minimizeToTray", false).toBool();
     ui->minimizeToTrayCheckBox->setChecked(m_minimizeToTray);
     ui->autoStartCheckBox->setChecked(isAutoStartEnabled());
+    
+    // 初始化增益和采样频率控件的显示值
+    ui->gainValueLabel->setText(QString::number(static_cast<int>(m_autoBrightness->getGain())));
+    // 初始化采样频率标签（根据当前间隔计算频率）
+    double currentFreq = 1000.0 / m_autoBrightness->getCaptureInterval();
+    updateSamplingFreqLabel(currentFreq);
     
     // 初始化显示器列表
     refreshMonitorList();
@@ -148,6 +171,11 @@ void MainWindow::on_pushButton_2_clicked()
         m_autoBrightThread = nullptr;
     }
     
+    // 清除实时亮度曲线数据
+    if (m_curveWidget) {
+        m_curveWidget->clearData();
+    }
+    
     // 更新托盘菜单状态
     updateTrayMenu();
 
@@ -174,6 +202,41 @@ void MainWindow::on_samplePointsSlider_valueChanged(int value)
     // 采样点数范围：2到20
     m_autoBrightness->setSamplePoints(value);
     ui->samplePointsValueLabel->setText(QString::number(value) + "x" + QString::number(value));
+}
+
+void MainWindow::on_gainSlider_valueChanged(int value)
+{
+    // 增益值范围：0到255，滑块值直接对应增益值
+    double gain = static_cast<double>(value);
+    m_autoBrightness->setGain(gain);
+    ui->gainValueLabel->setText(QString::number(value));
+}
+
+void MainWindow::on_samplingFreqSlider_valueChanged(int value)
+{
+    // 采样频率范围：0.01Hz到60Hz（对数刻度）
+    // 使用对数映射：slider value 0-100 -> frequency 0.01-60 Hz
+    // log10(0.01) = -2, log10(60) ≈ 1.778
+    // 线性映射到对数空间
+    const double logMin = -2.0;  // log10(0.01)
+    const double logMax = std::log10(60.0);  // log10(60) = 1.778...
+    double logFreq = logMin + (value / 100.0) * (logMax - logMin);
+    double freqHz = std::pow(10.0, logFreq);
+    
+    // 防止除零错误
+    if (freqHz <= 0.0) {
+        freqHz = 0.01;  // 最小频率
+    }
+    
+    // 转换为毫秒间隔
+    int intervalMs = static_cast<int>(1000.0 / freqHz);
+    m_autoBrightness->setCaptureInterval(intervalMs);
+    
+    // 更新UI标签
+    updateSamplingFreqLabel(freqHz);
+    
+    // 更新曝光时间限制
+    updateExposureLimits(freqHz);
 }
 
 void MainWindow::on_editCurveButton_clicked()
@@ -234,6 +297,12 @@ void MainWindow::updateCameraBrightness(int brightness)
     int grayValue = static_cast<int>(brightness * 255.0 / 100.0);
     QString styleSheet = QString("background-color: rgb(%1, %1, %1);").arg(grayValue);
     ui->cameraBrightnessBlock->setStyleSheet(styleSheet);
+    
+    // 更新实时亮度曲线（仅在运行时）
+    if (m_running && m_curveWidget) {
+        int screenBrightness = m_autoBrightness->getCurrentScreenBrightness();
+        m_curveWidget->addDataPoint(brightness, screenBrightness);
+    }
     
     // 更新状态栏的最后更新时间
     if (m_running) {
@@ -502,6 +571,38 @@ void MainWindow::updateButtonStates()
     }
 }
 
+void MainWindow::updateSamplingFreqLabel(double freqHz)
+{
+    QString freqText;
+    if (freqHz < 1.0) {
+        // 显示为毫赫兹（mHz）
+        freqText = QString::number(freqHz * 1000.0, 'f', 1) + " mHz";
+    } else {
+        freqText = QString::number(freqHz, 'f', 2) + " Hz";
+    }
+    ui->samplingFreqValueLabel->setText(freqText);
+}
+
+void MainWindow::updateExposureLimits(double freqHz)
+{
+    // 曝光时间不应超过采样间隔的一半，以避免冲突
+    // 采样间隔 = 1 / freqHz 秒
+    double maxExposureTime = 0.5 / freqHz;  // 秒
+    
+    // 添加合理的上限值检查，避免计算出不切实际的曝光时间建议
+    // 相机曝光时间通常不会超过10秒
+    const double MAX_PRACTICAL_EXPOSURE = 10.0;  // 秒
+    if (maxExposureTime > MAX_PRACTICAL_EXPOSURE) {
+        maxExposureTime = MAX_PRACTICAL_EXPOSURE;
+    }
+    
+    // 相机曝光值通常是对数刻度，这里做简单提示
+    // 实际限制需要根据具体相机特性调整
+    qDebug() << "Sampling frequency:" << freqHz << "Hz, max recommended exposure time:" << maxExposureTime << "s";
+    
+    // 可以在这里添加UI提示或自动调整曝光滑块的最大值
+    // 例如：如果当前曝光时间过长，给出警告
+}
 void MainWindow::refreshMonitorList()
 {
     ui->monitorSelectComboBox->clear();

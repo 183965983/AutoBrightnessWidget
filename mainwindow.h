@@ -7,6 +7,7 @@
 #include <QCloseEvent>
 #include <QLabel>
 #include "AutoBrightness.h"
+#include "BrightnessCurveWidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -31,6 +32,8 @@ private slots:
     void on_exposureSlider_valueChanged(int value);
     void on_intervalSlider_valueChanged(int value);
     void on_samplePointsSlider_valueChanged(int value);
+    void on_gainSlider_valueChanged(int value);  // 新增：增益滑块
+    void on_samplingFreqSlider_valueChanged(int value);  // 新增：采样频率滑块
     
     // 新槽函数
     void on_autoStartCheckBox_toggled(bool checked);
@@ -67,6 +70,8 @@ private:
     void updateLastUpdateTime();
     void updateTrayMenu();  // 更新托盘菜单状态
     void checkForUpdates();
+    void updateSamplingFreqLabel(double freqHz);  // 更新采样频率标签
+    void updateExposureLimits(double freqHz);     // 根据采样频率更新曝光限制
     void refreshMonitorList();  // 刷新显示器列表
     void loadMonitorConfig(int monitorIndex);  // 加载显示器配置
     
@@ -86,5 +91,8 @@ private:
     // 状态栏标签
     QLabel* m_statusLabel;
     QLabel* m_lastUpdateLabel;
+    
+    // 实时亮度曲线
+    BrightnessCurveWidget* m_curveWidget;
 };
 #endif // MAINWINDOW_H

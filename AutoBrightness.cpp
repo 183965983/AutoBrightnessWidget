@@ -123,6 +123,7 @@ AutoBrightness::AutoBrightness(QObject* parent): QObject(parent)
     , m_exposure(-6.0)           // 默认曝光值
     , m_captureInterval(10000)   // 默认10秒间隔
     , m_samplePoints(5)          // 默认5x5采样点
+    , m_gain(0.0)                // 默认增益值
     , m_minCameraBrightness(0)
     , m_maxCameraBrightness(100)
     , m_minScreenBrightness(0)
@@ -155,8 +156,9 @@ void AutoBrightness::openCap(){
     // 设置摄像头参数
     m_cap.set(cv::CAP_PROP_AUTO_EXPOSURE, 0.25); // 0.25表示手动模式
     m_cap.set(cv::CAP_PROP_EXPOSURE, m_exposure); // 设置曝光值
+    m_cap.set(cv::CAP_PROP_GAIN, m_gain);         // 设置增益值
     
-    qDebug() << "Camera opened with exposure:" << m_exposure;
+    qDebug() << "Camera opened with exposure:" << m_exposure << "gain:" << m_gain;
 }
 
 void AutoBrightness::releaseCap(){
@@ -211,6 +213,14 @@ void AutoBrightness::setSamplePoints(int points) {
     if (points >= 2 && points <= 20) {
         m_samplePoints = points;
         qDebug() << "Sample points updated to:" << m_samplePoints << "x" << m_samplePoints;
+    }
+}
+
+void AutoBrightness::setGain(double gain) {
+    m_gain = gain;
+    if (m_cap.isOpened()) {
+        m_cap.set(cv::CAP_PROP_GAIN, m_gain);
+        qDebug() << "Gain updated to:" << m_gain;
     }
 }
 
@@ -512,6 +522,7 @@ void AutoBrightness::saveSettings() {
     settings.setValue("exposure", m_exposure);
     settings.setValue("captureInterval", m_captureInterval);
     settings.setValue("samplePoints", m_samplePoints);
+    settings.setValue("gain", m_gain);  // 保存增益值
     
     // 保存曲线点
     settings.beginWriteArray("curvePoints");
@@ -569,6 +580,7 @@ void AutoBrightness::loadSettings() {
     m_exposure = settings.value("exposure", -6.0).toDouble();
     m_captureInterval = settings.value("captureInterval", 10000).toInt();
     m_samplePoints = settings.value("samplePoints", 5).toInt();
+    m_gain = settings.value("gain", 0.0).toDouble();  // 加载增益值
     
     // 加载曲线点
     m_curvePoints.clear();
