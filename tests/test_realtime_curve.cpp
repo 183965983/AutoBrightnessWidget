@@ -129,5 +129,8 @@ private slots:
     }
 };
 
-QTEST_MAIN(TestRealTimeCurve)
+QObject* createTestRealTimeCurveInstance() {
+    return new TestRealTimeCurve();
+}
+
 #include "test_realtime_curve.moc"
