@@ -73,6 +73,8 @@ private:
     void updateExposureLimits(double freqHz);     // 根据采样频率更新曝光限制
     void refreshMonitorList();  // 刷新显示器列表
     void loadMonitorConfig(int monitorIndex);  // 加载显示器配置
+    double convertSliderValueToFrequency(int sliderValue);  // 将滑块值转换为频率
+    int convertFrequencyToInterval(double freqHz);  // 将频率转换为间隔毫秒数
     
     Ui::MainWindow *ui;
     QThread* m_autoBrightThread;
