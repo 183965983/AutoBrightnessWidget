@@ -4,7 +4,7 @@
 #include <QLabel>
 #include <QStatusBar>
 #include <QDebug>
-#include "mainwindow.h"
+#include "../UI/mainwindow.h"
 
 class TestStatusBar : public QObject
 {

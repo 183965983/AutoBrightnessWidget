@@ -4,8 +4,8 @@
 #include <QLabel>
 #include <QGroupBox>
 #include <QDebug>
-#include "mainwindow.h"
-#include "AutoBrightness.h"
+#include "../UI/mainwindow.h"
+#include "../Ctrl/AutoBrightness.h"
 #include "BrightnessCurveWidget.h"
 
 class TestRealTimeCurve : public QObject

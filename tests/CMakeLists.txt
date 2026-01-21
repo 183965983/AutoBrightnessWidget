@@ -17,39 +17,39 @@ set(TEST_SOURCES
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(AutoBrightnessWidgetTests
         ${TEST_SOURCES}
-        ../AutoBrightness.cpp
-        ../AutoBrightness.h
-        ../CurveEditorWidget.cpp
-        ../CurveEditorWidget.h
-        ../CurveEditorDialog.cpp
-        ../CurveEditorDialog.h
-        ../BrightnessCurveWidget.cpp
-        ../BrightnessCurveWidget.h
-        ../UpdateChecker.cpp
-        ../UpdateChecker.h
-        ../UpdateDialog.cpp
-        ../UpdateDialog.h
-        ../mainwindow.cpp
-        ../mainwindow.h
-        ../mainwindow.ui
+        ../Ctrl/AutoBrightness.cpp
+        ../Ctrl/AutoBrightness.h
+        ../UI/CurveEditorWidget.cpp
+        ../UI/CurveEditorWidget.h
+        ../UI/CurveEditorDialog.cpp
+        ../UI/CurveEditorDialog.h
+        ../UI/BrightnessCurveWidget.cpp
+        ../UI/BrightnessCurveWidget.h
+        ../Ctrl/UpdateChecker.cpp
+        ../Ctrl/UpdateChecker.h
+        ../UI/UpdateDialog.cpp
+        ../UI/UpdateDialog.h
+        ../UI/mainwindow.cpp
+        ../UI/mainwindow.h
+        ../UI/mainwindow.ui
     )
 else()
     add_executable(AutoBrightnessWidgetTests
         ${TEST_SOURCES}
-        ../AutoBrightness.cpp
-        ../AutoBrightness.h
-        ../CurveEditorWidget.cpp
-        ../CurveEditorWidget.h
-        ../CurveEditorDialog.cpp
-        ../CurveEditorDialog.h
-        ../BrightnessCurveWidget.cpp
-        ../BrightnessCurveWidget.h
-        ../UpdateChecker.cpp
-        ../UpdateChecker.h
-        ../UpdateDialog.cpp
-        ../UpdateDialog.h
-        ../mainwindow.cpp
-        ../mainwindow.h
+        ../Ctrl/AutoBrightness.cpp
+        ../Ctrl/AutoBrightness.h
+        ../UI/CurveEditorWidget.cpp
+        ../UI/CurveEditorWidget.h
+        ../UI/CurveEditorDialog.cpp
+        ../UI/CurveEditorDialog.h
+        ../UI/BrightnessCurveWidget.cpp
+        ../UI/BrightnessCurveWidget.h
+        ../Ctrl/UpdateChecker.cpp
+        ../Ctrl/UpdateChecker.h
+        ../UI/UpdateDialog.cpp
+        ../UI/UpdateDialog.h
+        ../UI/mainwindow.cpp
+        ../UI/mainwindow.h
     )
 endif()
 

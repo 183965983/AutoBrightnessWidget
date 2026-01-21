@@ -1,6 +1,6 @@
 #include "CurveEditorDialog.h"
 #include "CurveEditorWidget.h"
-#include "AutoBrightness.h"
+#include "Ctrl/AutoBrightness.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
