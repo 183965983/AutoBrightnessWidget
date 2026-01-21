@@ -224,19 +224,21 @@ double MainWindow::convertSliderValueToFrequency(int sliderValue) {
     // 使用对数映射：slider value 0-100 -> frequency 0.01-60 Hz
     // log10(0.01) = -2, log10(60) ≈ 1.778
     const double logMin = -2.0;  // log10(0.01)
-    const double logMax = std::log10(60.0);  // log10(60) = 1.778...
+    const double logMax = std::log10(60.0);  // log10(60) ≈ 1.778
     double logFreq = logMin + (sliderValue / 100.0) * (logMax - logMin);
     double freqHz = std::pow(10.0, logFreq);
     
-    // 防止除零错误
-    if (freqHz <= 0.0) {
-        freqHz = 0.01;  // 最小频率
-    }
-    
-    return freqHz;
+    // 确保频率在有效范围内
+    return std::max(0.01, std::min(60.0, freqHz));
 }
 
 int MainWindow::convertFrequencyToInterval(double freqHz) {
+    // 验证频率有效性
+    if (freqHz <= 0.0) {
+        qWarning() << "Invalid frequency:" << freqHz << ", using default 0.1 Hz";
+        freqHz = 0.1;  // 使用默认频率
+    }
+    
     // 转换为毫秒间隔
     return static_cast<int>(1000.0 / freqHz);
 }
