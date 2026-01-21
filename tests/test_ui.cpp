@@ -34,8 +34,8 @@ private slots:
         MainWindow window;
         window.show();
         
-        // Find the start button (pushButton)
-        QPushButton* startButton = window.findChild<QPushButton*>("pushButton");
+        // Find the start button (startButton)
+        QPushButton* startButton = window.findChild<QPushButton*>("startButton");
         QVERIFY(startButton != nullptr);
         QVERIFY(startButton->isVisible());
         
@@ -48,8 +48,8 @@ private slots:
         MainWindow window;
         window.show();
         
-        // Find the stop button (pushButton_2)
-        QPushButton* stopButton = window.findChild<QPushButton*>("pushButton_2");
+        // Find the stop button (stopButton)
+        QPushButton* stopButton = window.findChild<QPushButton*>("stopButton");
         QVERIFY(stopButton != nullptr);
         QVERIFY(stopButton->isVisible());
         
@@ -63,8 +63,8 @@ private slots:
         MainWindow window;
         window.show();
         
-        QPushButton* startButton = window.findChild<QPushButton*>("pushButton");
-        QPushButton* stopButton = window.findChild<QPushButton*>("pushButton_2");
+        QPushButton* startButton = window.findChild<QPushButton*>("startButton");
+        QPushButton* stopButton = window.findChild<QPushButton*>("stopButton");
         
         QVERIFY(startButton != nullptr);
         QVERIFY(stopButton != nullptr);

@@ -452,7 +452,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="startButton">
         <property name="text">
          <string>启动</string>
         </property>
@@ -478,7 +478,7 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="pushButton_2">
+       <widget class="QPushButton" name="stopButton">
         <property name="text">
          <string>停止</string>
         </property>

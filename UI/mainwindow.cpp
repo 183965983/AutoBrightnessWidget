@@ -120,7 +120,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_startButton_clicked()
 {
     if(m_running){
         return; // Already running
@@ -159,7 +159,7 @@ void MainWindow::on_pushButton_clicked()
 }
 
 
-void MainWindow::on_pushButton_2_clicked()
+void MainWindow::on_stopButton_clicked()
 {
     m_running = false;
     updateStatusBar();
@@ -410,16 +410,16 @@ void MainWindow::showWindowFromTray()
 void MainWindow::startFromTray()
 {
     if (!m_running) {
-        on_pushButton_clicked();  // 调用现有的启动逻辑
-        // updateTrayMenu() 已在 on_pushButton_clicked() 中调用
+        on_startButton_clicked();  // 调用现有的启动逻辑
+        // updateTrayMenu() 已在 on_startButton_clicked() 中调用
     }
 }
 
 void MainWindow::stopFromTray()
 {
     if (m_running) {
-        on_pushButton_2_clicked();  // 调用现有的停止逻辑
-        // updateTrayMenu() 已在 on_pushButton_2_clicked() 中调用
+        on_stopButton_clicked();  // 调用现有的停止逻辑
+        // updateTrayMenu() 已在 on_stopButton_clicked() 中调用
     }
 }
 
@@ -546,20 +546,20 @@ void MainWindow::updateButtonStates()
 {
     // 更新启动按钮
     if (m_running) {
-        ui->pushButton->setEnabled(false);
-        ui->pushButton->setToolTip("自动亮度调节正在运行中");
+        ui->startButton->setEnabled(false);
+        ui->startButton->setToolTip("自动亮度调节正在运行中");
     } else {
-        ui->pushButton->setEnabled(true);
-        ui->pushButton->setToolTip("点击启动自动亮度调节");
+        ui->startButton->setEnabled(true);
+        ui->startButton->setToolTip("点击启动自动亮度调节");
     }
     
     // 更新停止按钮
     if (m_running) {
-        ui->pushButton_2->setEnabled(true);
-        ui->pushButton_2->setToolTip("点击停止自动亮度调节");
+        ui->stopButton->setEnabled(true);
+        ui->stopButton->setToolTip("点击停止自动亮度调节");
     } else {
-        ui->pushButton_2->setEnabled(false);
-        ui->pushButton_2->setToolTip("自动亮度调节未运行");
+        ui->stopButton->setEnabled(false);
+        ui->stopButton->setToolTip("自动亮度调节未运行");
     }
 }
 

@@ -27,8 +27,8 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
-    void on_pushButton_clicked();
-    void on_pushButton_2_clicked();
+    void on_startButton_clicked();
+    void on_stopButton_clicked();
     void on_exposureSlider_valueChanged(int value);
     void on_samplePointsSlider_valueChanged(int value);
     void on_gainSlider_valueChanged(int value);  // 新增：增益滑块
