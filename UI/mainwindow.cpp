@@ -151,12 +151,12 @@ void MainWindow::on_pushButton_clicked()
                 
                 // 将长时间的 sleep 拆分为多个短间隔，以便能快速响应停止命令
                 // 特别是当采样频率很低时（如 0.01 Hz = 100秒间隔）
+                constexpr int SLEEP_CHUNK_MS = 100;  // 每次睡眠 100ms
                 int totalInterval = AutoBrightness::getInstance()->getCaptureInterval();
-                const int sleepChunk = 100;  // 每次睡眠 100ms
                 int remainingTime = totalInterval;
                 
                 while (m_running && remainingTime > 0) {
-                    int sleepTime = std::min(sleepChunk, remainingTime);
+                    int sleepTime = std::min(SLEEP_CHUNK_MS, remainingTime);
                     QThread::msleep(sleepTime);
                     remainingTime -= sleepTime;
                 }
