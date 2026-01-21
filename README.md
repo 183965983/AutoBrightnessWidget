@@ -210,26 +210,39 @@ AutoBrightnessWidget/
 ├── .github/
 │   ├── workflows/          # GitHub Actions workflows
 │   └── WORKFLOWS.md        # CI/CD documentation
+├── UI/                     # User Interface layer
+│   ├── mainwindow.cpp/h/ui       # Main window
+│   ├── CurveEditorDialog.cpp/h   # Curve editor dialog
+│   ├── CurveEditorWidget.cpp/h   # Curve editor widget
+│   ├── BrightnessCurveWidget.cpp/h  # Brightness curve display
+│   └── UpdateDialog.cpp/h        # Update notification dialog
+├── Ctrl/                   # Controller/Logic layer
+│   ├── AutoBrightness.cpp/h      # Core brightness adjustment logic
+│   └── UpdateChecker.cpp/h       # Update checking logic
+├── tests/                  # Test suite
 ├── main.cpp                # Application entry point
-├── mainwindow.cpp/h/ui     # Main window UI
-├── AutoBrightness.cpp/h    # Core brightness adjustment logic
 ├── CMakeLists.txt          # CMake build configuration
 └── README.md               # This file
 ```
 
 ## Architecture
 
-- **MainWindow**: Qt-based GUI for user interaction
-- **AutoBrightness**: Core class handling:
-  - Camera capture via OpenCV
-  - Brightness calculation from video frames
-  - System brightness adjustment
-  - Threading for continuous monitoring
-- **UpdateChecker**: Handles automatic update checks:
-  - Queries GitHub API for latest releases
-  - Compares version numbers
-  - Notifies when updates are available
-- **UpdateDialog**: Displays update notifications with release information
+- **UI Layer**: Qt-based graphical user interface components
+  - **MainWindow**: Main application window with controls
+  - **CurveEditorDialog/Widget**: Interactive brightness curve editor
+  - **BrightnessCurveWidget**: Real-time brightness display
+  - **UpdateDialog**: Update notification UI
+- **Controller Layer**: Core business logic and system integration
+  - **AutoBrightness**: Core class handling:
+    - Camera capture via OpenCV
+    - Brightness calculation from video frames
+    - System brightness adjustment
+    - Multi-monitor support
+    - Threading for continuous monitoring
+  - **UpdateChecker**: Handles automatic update checks:
+    - Queries GitHub API for latest releases
+    - Compares version numbers
+    - Notifies when updates are available
 
 ## Contributing
 

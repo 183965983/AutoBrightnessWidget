@@ -6,7 +6,7 @@
 #include <QDebug>
 #include "../UI/mainwindow.h"
 #include "../Ctrl/AutoBrightness.h"
-#include "BrightnessCurveWidget.h"
+#include "../UI/BrightnessCurveWidget.h"
 
 class TestRealTimeCurve : public QObject
 {
