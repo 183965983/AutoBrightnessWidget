@@ -5,8 +5,8 @@
 #include <QSpinBox>
 #include <QLabel>
 #include <QDebug>
-#include "mainwindow.h"
-#include "AutoBrightness.h"
+#include "../UI/mainwindow.h"
+#include "Ctrl/AutoBrightness.h"
 
 class TestNewFeatures : public QObject
 {

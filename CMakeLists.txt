@@ -30,29 +30,33 @@ include_directories("${OpenCV_INCLUDE_DIRS}")
 # Translation feature disabled to avoid deployment issues
 # set(TS_FILES AutoBrightnessWidget_zh_CN.ts)
 
+# 添加 UI 和 Ctrl 目录到包含路径
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/UI)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/Ctrl)
+
 set(PROJECT_SOURCES
         main.cpp
-        mainwindow.cpp
-        AutoBrightness.cpp
-        CurveEditorWidget.cpp
-        CurveEditorDialog.cpp
-        BrightnessCurveWidget.cpp
-        UpdateChecker.cpp
-        UpdateDialog.cpp
-        mainwindow.h
-        mainwindow.ui
+        UI/mainwindow.cpp
+        UI/CurveEditorWidget.cpp
+        UI/CurveEditorDialog.cpp
+        UI/BrightnessCurveWidget.cpp
+        UI/UpdateDialog.cpp
+        Ctrl/AutoBrightness.cpp
+        Ctrl/UpdateChecker.cpp
+        UI/mainwindow.h
+        UI/mainwindow.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(AutoBrightnessWidget
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        AutoBrightness.h
-        CurveEditorWidget.h
-        CurveEditorDialog.h
-        BrightnessCurveWidget.h
-        UpdateChecker.h
-        UpdateDialog.h
+        Ctrl/AutoBrightness.h
+        Ctrl/UpdateChecker.h
+        UI/CurveEditorWidget.h
+        UI/CurveEditorDialog.h
+        UI/BrightnessCurveWidget.h
+        UI/UpdateDialog.h
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET AutoBrightnessWidget APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
