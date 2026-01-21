@@ -13,9 +13,9 @@
 #include <QTime>
 #include <QVBoxLayout>
 #include <cmath>
-#include "Ctrl/AutoBrightness.h"
+#include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
-#include "Ctrl/UpdateChecker.h"
+#include "UpdateChecker.h"
 #include "UpdateDialog.h"
 
 #ifdef Q_OS_WIN

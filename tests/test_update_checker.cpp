@@ -1,6 +1,6 @@
 #include <QtTest/QtTest>
 #include <QSignalSpy>
-#include "../Ctrl/UpdateChecker.h"
+#include "Ctrl/UpdateChecker.h"
 
 /**
  * @brief 更新检查器测试

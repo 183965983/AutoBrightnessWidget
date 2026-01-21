@@ -1,4 +1,4 @@
-#include "UI/mainwindow.h"
+#include "mainwindow.h"
 
 #include <QApplication>
 // Translation feature disabled to avoid deployment issues

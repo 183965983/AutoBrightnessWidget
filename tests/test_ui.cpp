@@ -2,7 +2,7 @@
 #include <QApplication>
 #include <QPushButton>
 #include <QDebug>
-#include "../UI/mainwindow.h"
+#include "UI/mainwindow.h"
 
 class TestUI : public QObject
 {

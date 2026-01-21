@@ -6,7 +6,7 @@
 #include <QMenu>
 #include <QCloseEvent>
 #include <QLabel>
-#include "Ctrl/AutoBrightness.h"
+#include "AutoBrightness.h"
 #include "BrightnessCurveWidget.h"
 
 QT_BEGIN_NAMESPACE

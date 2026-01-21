@@ -1,6 +1,6 @@
 #include <QTest>
 #include <QDebug>
-#include "../Ctrl/AutoBrightness.h"
+#include "Ctrl/AutoBrightness.h"
 
 class TestMultiMonitor : public QObject
 {

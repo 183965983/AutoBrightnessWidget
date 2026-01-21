@@ -6,7 +6,7 @@
 #include <QLabel>
 #include <QDebug>
 #include "../UI/mainwindow.h"
-#include "../Ctrl/AutoBrightness.h"
+#include "Ctrl/AutoBrightness.h"
 
 class TestNewFeatures : public QObject
 {
