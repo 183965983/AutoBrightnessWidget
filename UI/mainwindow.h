@@ -30,7 +30,6 @@ private slots:
     void on_pushButton_clicked();
     void on_pushButton_2_clicked();
     void on_exposureSlider_valueChanged(int value);
-    void on_intervalSlider_valueChanged(int value);
     void on_samplePointsSlider_valueChanged(int value);
     void on_gainSlider_valueChanged(int value);  // 新增：增益滑块
     void on_samplingFreqSlider_valueChanged(int value);  // 新增：采样频率滑块
