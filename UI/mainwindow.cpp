@@ -13,6 +13,7 @@
 #include <QTime>
 #include <QVBoxLayout>
 #include <cmath>
+#include <algorithm>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
 #include "UpdateChecker.h"
@@ -147,7 +148,18 @@ void MainWindow::on_pushButton_clicked()
             AutoBrightness::getInstance()->openCap();
             while(m_running){
                 AutoBrightness::getInstance()->update();
-                QThread::msleep(AutoBrightness::getInstance()->getCaptureInterval());
+                
+                // 将长时间的 sleep 拆分为多个短间隔，以便能快速响应停止命令
+                // 特别是当采样频率很低时（如 0.01 Hz = 100秒间隔）
+                int totalInterval = AutoBrightness::getInstance()->getCaptureInterval();
+                const int sleepChunk = 100;  // 每次睡眠 100ms
+                int remainingTime = totalInterval;
+                
+                while (m_running && remainingTime > 0) {
+                    int sleepTime = std::min(sleepChunk, remainingTime);
+                    QThread::msleep(sleepTime);
+                    remainingTime -= sleepTime;
+                }
             }
             AutoBrightness::getInstance()->releaseCap();
         });
