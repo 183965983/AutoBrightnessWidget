@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QTime>
 #include <QVBoxLayout>
+#include <algorithm>
 #include <cmath>
 #include "AutoBrightness.h"
 #include "CurveEditorDialog.h"
