@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QTime>
 #include <QVBoxLayout>
+#include <algorithm>
 #include <cmath>
 #include <algorithm>
 #include "AutoBrightness.h"
@@ -124,7 +125,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_startButton_clicked()
 {
     if(m_running){
         return; // Already running
@@ -174,7 +175,7 @@ void MainWindow::on_pushButton_clicked()
 }
 
 
-void MainWindow::on_pushButton_2_clicked()
+void MainWindow::on_stopButton_clicked()
 {
     m_running = false;
     updateStatusBar();
@@ -204,14 +205,6 @@ void MainWindow::on_exposureSlider_valueChanged(int value)
     ui->exposureValueLabel->setText(QString::number(exposure, 'f', 1));
 }
 
-void MainWindow::on_intervalSlider_valueChanged(int value)
-{
-    // 间隔范围：1秒到60秒，滑块值直接对应秒数
-    int intervalMs = value * 1000;
-    m_autoBrightness->setCaptureInterval(intervalMs);
-    ui->intervalValueLabel->setText(QString::number(value) + "s");
-}
-
 void MainWindow::on_samplePointsSlider_valueChanged(int value)
 {
     // 采样点数范围：2到20
@@ -230,21 +223,10 @@ void MainWindow::on_gainSlider_valueChanged(int value)
 void MainWindow::on_samplingFreqSlider_valueChanged(int value)
 {
     // 采样频率范围：0.01Hz到60Hz（对数刻度）
-    // 使用对数映射：slider value 0-100 -> frequency 0.01-60 Hz
-    // log10(0.01) = -2, log10(60) ≈ 1.778
-    // 线性映射到对数空间
-    const double logMin = -2.0;  // log10(0.01)
-    const double logMax = std::log10(60.0);  // log10(60) = 1.778...
-    double logFreq = logMin + (value / 100.0) * (logMax - logMin);
-    double freqHz = std::pow(10.0, logFreq);
-    
-    // 防止除零错误
-    if (freqHz <= 0.0) {
-        freqHz = 0.01;  // 最小频率
-    }
+    double freqHz = convertSliderValueToFrequency(value);
     
     // 转换为毫秒间隔
-    int intervalMs = static_cast<int>(1000.0 / freqHz);
+    int intervalMs = convertFrequencyToInterval(freqHz);
     m_autoBrightness->setCaptureInterval(intervalMs);
     
     // 更新UI标签
@@ -252,6 +234,29 @@ void MainWindow::on_samplingFreqSlider_valueChanged(int value)
     
     // 更新曝光时间限制
     updateExposureLimits(freqHz);
+}
+
+double MainWindow::convertSliderValueToFrequency(int sliderValue) {
+    // 使用对数映射：slider value 0-100 -> frequency 0.01-60 Hz
+    // log10(0.01) = -2, log10(60) ≈ 1.778
+    const double logMin = -2.0;  // log10(0.01)
+    const double logMax = std::log10(60.0);  // log10(60) ≈ 1.778
+    double logFreq = logMin + (sliderValue / 100.0) * (logMax - logMin);
+    double freqHz = std::pow(10.0, logFreq);
+    
+    // 确保频率在有效范围内
+    return std::max(0.01, std::min(60.0, freqHz));
+}
+
+int MainWindow::convertFrequencyToInterval(double freqHz) {
+    // 验证频率有效性
+    if (freqHz <= 0.0) {
+        qWarning() << "Invalid frequency:" << freqHz << ", using default 0.1 Hz";
+        freqHz = 0.1;  // 使用默认频率
+    }
+    
+    // 转换为毫秒间隔
+    return static_cast<int>(1000.0 / freqHz);
 }
 
 void MainWindow::on_editCurveButton_clicked()
@@ -433,16 +438,16 @@ void MainWindow::showWindowFromTray()
 void MainWindow::startFromTray()
 {
     if (!m_running) {
-        on_pushButton_clicked();  // 调用现有的启动逻辑
-        // updateTrayMenu() 已在 on_pushButton_clicked() 中调用
+        on_startButton_clicked();  // 调用现有的启动逻辑
+        // updateTrayMenu() 已在 on_startButton_clicked() 中调用
     }
 }
 
 void MainWindow::stopFromTray()
 {
     if (m_running) {
-        on_pushButton_2_clicked();  // 调用现有的停止逻辑
-        // updateTrayMenu() 已在 on_pushButton_2_clicked() 中调用
+        on_stopButton_clicked();  // 调用现有的停止逻辑
+        // updateTrayMenu() 已在 on_stopButton_clicked() 中调用
     }
 }
 
@@ -569,20 +574,20 @@ void MainWindow::updateButtonStates()
 {
     // 更新启动按钮
     if (m_running) {
-        ui->pushButton->setEnabled(false);
-        ui->pushButton->setToolTip("自动亮度调节正在运行中");
+        ui->startButton->setEnabled(false);
+        ui->startButton->setToolTip("自动亮度调节正在运行中");
     } else {
-        ui->pushButton->setEnabled(true);
-        ui->pushButton->setToolTip("点击启动自动亮度调节");
+        ui->startButton->setEnabled(true);
+        ui->startButton->setToolTip("点击启动自动亮度调节");
     }
     
     // 更新停止按钮
     if (m_running) {
-        ui->pushButton_2->setEnabled(true);
-        ui->pushButton_2->setToolTip("点击停止自动亮度调节");
+        ui->stopButton->setEnabled(true);
+        ui->stopButton->setToolTip("点击停止自动亮度调节");
     } else {
-        ui->pushButton_2->setEnabled(false);
-        ui->pushButton_2->setToolTip("自动亮度调节未运行");
+        ui->stopButton->setEnabled(false);
+        ui->stopButton->setToolTip("自动亮度调节未运行");
     }
 }
 

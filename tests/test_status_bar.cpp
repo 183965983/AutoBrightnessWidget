@@ -39,8 +39,8 @@ private slots:
     void test_initial_button_states() {
         MainWindow window;
         
-        QPushButton* startButton = window.findChild<QPushButton*>("pushButton");
-        QPushButton* stopButton = window.findChild<QPushButton*>("pushButton_2");
+        QPushButton* startButton = window.findChild<QPushButton*>("startButton");
+        QPushButton* stopButton = window.findChild<QPushButton*>("stopButton");
         
         QVERIFY(startButton != nullptr);
         QVERIFY(stopButton != nullptr);
@@ -58,8 +58,8 @@ private slots:
     void test_button_tooltips() {
         MainWindow window;
         
-        QPushButton* startButton = window.findChild<QPushButton*>("pushButton");
-        QPushButton* stopButton = window.findChild<QPushButton*>("pushButton_2");
+        QPushButton* startButton = window.findChild<QPushButton*>("startButton");
+        QPushButton* stopButton = window.findChild<QPushButton*>("stopButton");
         
         QVERIFY(startButton != nullptr);
         QVERIFY(stopButton != nullptr);
